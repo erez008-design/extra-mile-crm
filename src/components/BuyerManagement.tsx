@@ -525,13 +525,17 @@ export const BuyerManagement = () => {
   };
 
   const fetchProperties = async () => {
-    const { data } = await supabase
+    console.log("[fetchProperties] Fetching all properties...");
+    const { data, error } = await supabase
       .from("properties")
       .select("id, address, city, price, rooms")
       .order("created_at", { ascending: false });
 
-    if (data) {
-      setProperties(data);
+    if (error) {
+      console.error("[fetchProperties] Error:", error);
+    } else {
+      console.log("[fetchProperties] Loaded", data?.length, "properties");
+      setProperties(data || []);
     }
   };
 
@@ -804,30 +808,34 @@ export const BuyerManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label>בחר נכסים להציע *</Label>
-                  <div className="max-h-64 overflow-y-auto space-y-2 mt-2 border rounded-lg p-3">
-                    {properties.map((property) => (
-                      <div key={property.id} className="flex items-start gap-2">
-                        <Checkbox
-                          checked={selectedProperties.includes(property.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProperties([...selectedProperties, property.id]);
-                            } else {
-                              setSelectedProperties(selectedProperties.filter((id) => id !== property.id));
-                            }
-                          }}
-                        />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {property.address}, {property.city}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {property.rooms} חדרים • ₪{property.price.toLocaleString()}
-                          </p>
+                  <Label>בחר נכסים להציע</Label>
+                  <div className="max-h-64 overflow-y-auto space-y-2 mt-2 border rounded-lg p-3 bg-background">
+                    {properties.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">אין נכסים זמינים</p>
+                    ) : (
+                      properties.map((property) => (
+                        <div key={property.id} className="flex items-start gap-2 p-2 hover:bg-muted rounded-md">
+                          <Checkbox
+                            checked={selectedProperties.includes(property.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProperties([...selectedProperties, property.id]);
+                              } else {
+                                setSelectedProperties(selectedProperties.filter((id) => id !== property.id));
+                              }
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {property.address}, {property.city}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {property.rooms ? `${property.rooms} חדרים` : 'לא צוין'} • {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">נבחרו {selectedProperties.length} נכסים</p>
                 </div>
