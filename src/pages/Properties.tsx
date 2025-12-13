@@ -1,207 +1,174 @@
-import { useState } from "react";
-import { Search, Filter, MoreVertical, Building2, MapPin, Maximize, Loader2 } from "lucide-react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useProperties, useNeighborhoods } from "@/hooks/useProperties";
-import { formatPrice } from "@/lib/formatPrice";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { toast } from "sonner";
+import { LogOut, Building2, Plus } from "lucide-react";
+import PropertyCard from "@/components/PropertyCard";
 
-export default function Properties() {
-  const { data: properties = [], isLoading, error } = useProperties();
-  const { data: neighborhoods = [] } = useNeighborhoods();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [cityFilter, setCityFilter] = useState<string>("all");
+interface Property {
+  id: string;
+  address: string;
+  city: string;
+  price: number;
+  size_sqm: number | null;
+  rooms: number | null;
+  floor: number | null;
+  description: string | null;
+  has_sun_balcony: boolean | null;
+  parking_spots: number | null;
+  has_safe_room: boolean | null;
+  property_images: Array<{ url: string; is_primary: boolean }>;
+}
 
-  const cities = [...new Set(neighborhoods.map((n) => n.city_name))];
+const Properties = () => {
+  const navigate = useNavigate();
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  const filteredProperties = properties.filter((property) => {
-    const matchesSearch =
-      property.address.includes(searchQuery) ||
-      property.city.includes(searchQuery) ||
-      (property.neighborhood?.includes(searchQuery) ?? false);
-    const matchesCity = cityFilter === "all" || property.city === cityFilter;
-    return matchesSearch && matchesCity;
-  });
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-  const getStatusColor = (status: string | null) => {
-    const colors: Record<string, string> = {
-      available: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      sold: "bg-blue-100 text-blue-700 border-blue-200",
-      rented: "bg-purple-100 text-purple-700 border-purple-200",
-      pending: "bg-amber-100 text-amber-700 border-amber-200",
-    };
-    return colors[status || ""] || "bg-gray-100 text-gray-700";
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    // Get user profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", session.user.id)
+      .single();
+
+    // Get user role from user_roles table
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id);
+
+    if (profile) {
+      setUserName(profile.full_name || session.user.email || "");
+    }
+
+    if (roles && roles.length > 0) {
+      // Use first role (users can have multiple roles)
+      setUserRole(roles[0].role);
+    }
+
+    fetchProperties();
   };
 
-  const getStatusLabel = (status: string | null) => {
-    const labels: Record<string, string> = {
-      available: "פעיל",
-      sold: "נמכר",
-      rented: "מושכר",
-      pending: "בהמתנה",
-    };
-    return labels[status || ""] || status || "לא ידוע";
+  const fetchProperties = async () => {
+    setLoading(true);
+    
+    const { data, error } = await supabase
+      .from("properties")
+      .select(`
+        *,
+        property_images (
+          url,
+          is_primary
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("שגיאה בטעינת הנכסים");
+      console.error(error);
+    } else {
+      setProperties(data || []);
+    }
+
+    setLoading(false);
   };
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex h-96 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="flex h-96 flex-col items-center justify-center text-center">
-          <p className="text-destructive">שגיאה בטעינת הנכסים</p>
-          <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="animate-fade-in">
-            <h1 className="text-3xl font-bold text-foreground">נכסים</h1>
-            <p className="mt-1 text-muted-foreground">
-              {properties.length} נכסים במערכת
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card shadow-soft sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Building2 className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">EXTRAMILE</h1>
+                <p className="text-sm text-muted-foreground">הבית שלי</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                שלום, {userName}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 ml-2" />
+                יציאה
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">הנכסים שלי</h2>
+          <p className="text-muted-foreground">
+            כל הנכסים שצפית בהם עם הסוכן שלך
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-96 rounded-lg bg-muted animate-pulse"
+              />
+            ))}
+          </div>
+        ) : properties.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="inline-flex p-4 rounded-full bg-muted mb-4">
+              <Building2 className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">אין נכסים עדיין</h3>
+            <p className="text-muted-foreground">
+              הסוכן שלך ישלח לך נכסים רלוונטיים בקרוב
             </p>
           </div>
-        </div>
-
-        {/* Search and Filter */}
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="חיפוש לפי כתובת, עיר או שכונה..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10"
-            />
-          </div>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="סינון לפי עיר" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל הערים</SelectItem>
-              {cities.map((city: string) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Properties Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProperties.map((property, index) => {
-            const primaryImage = property.images.find((img) => img.is_primary) || property.images[0];
-            
-            return (
-              <Card
-                key={property.id}
-                className="group overflow-hidden transition-all duration-300 hover:shadow-lg animate-scale-in"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className="relative h-40 bg-gradient-to-br from-primary/10 to-primary/5">
-                  {primaryImage ? (
-                    <img
-                      src={primaryImage.url}
-                      alt={property.address}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Building2 className="h-16 w-16 text-primary/20" />
-                    </div>
-                  )}
-                  <Badge
-                    variant="outline"
-                    className={`absolute top-3 right-3 ${getStatusColor(property.status)}`}
-                  >
-                    {getStatusLabel(property.status)}
-                  </Badge>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 left-2 h-8 w-8 bg-background/80 opacity-0 transition-opacity group-hover:opacity-100"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem>עריכה</DropdownMenuItem>
-                      <DropdownMenuItem>צפייה בפרטים</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <CardContent className="p-4">
-                  <div className="mb-3">
-                    <h3 className="font-semibold text-foreground">{property.address}</h3>
-                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {property.city}
-                      {property.neighborhood && ` • ${property.neighborhood}`}
-                    </p>
-                  </div>
-                  <div className="mb-4 flex items-center gap-4 text-sm text-muted-foreground">
-                    {property.rooms && <span>{property.rooms} חדרים</span>}
-                    {property.size_sqm && (
-                      <span className="flex items-center gap-1">
-                        <Maximize className="h-3 w-3" />
-                        {property.size_sqm} מ״ר
-                      </span>
-                    )}
-                    {property.floor !== null && <span>קומה {property.floor}</span>}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-primary">
-                      {formatPrice(property.price)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {filteredProperties.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mt-4 text-lg font-semibold">לא נמצאו נכסים</h3>
-            <p className="mt-2 text-muted-foreground">נסה לחפש במילות מפתח אחרות</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {properties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
           </div>
         )}
-      </div>
-    </DashboardLayout>
+      </main>
+
+      {/* Floating action button for agents and admins */}
+      {(userRole === "agent" || userRole === "admin") && (
+        <Button
+          onClick={() => navigate("/agent")}
+          className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-medium bg-primary hover:bg-primary/90 z-50"
+          size="icon"
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
+      )}
+    </div>
   );
-}
+};
+
+export default Properties;

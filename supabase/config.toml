@@ -1,1 +1,22 @@
 project_id = "qkwdbnqkpyuchtlsrmjt"
+
+[functions.send-to-webtiv]
+verify_jwt = true
+
+[functions.sync-webtiv]
+verify_jwt = true
+
+[functions.send-invite]
+verify_jwt = true
+
+[functions.claim-invite]
+verify_jwt = true
+
+[functions.extract-taste-profile]
+verify_jwt = false
+
+[functions.match-properties]
+verify_jwt = false
+
+[functions.trigger-matching]
+verify_jwt = false
