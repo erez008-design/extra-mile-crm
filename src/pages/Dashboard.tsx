@@ -1,42 +1,50 @@
-import { Building2, Users, TrendingUp, Loader2 } from "lucide-react";
+import { Home, Users, UserPlus, Loader2, LogOut, Upload } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { useProperties } from "@/hooks/useProperties";
-import { useBuyers } from "@/hooks/useBuyers";
-import { formatPrice } from "@/lib/formatPrice";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useProfiles, useUserCounts, ProfileWithRole } from "@/hooks/useProfiles";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { data: properties = [], isLoading: propertiesLoading } = useProperties();
-  const { data: buyers = [], isLoading: buyersLoading } = useBuyers();
+  const { data: profiles = [], isLoading: profilesLoading } = useProfiles();
+  const { data: counts, isLoading: countsLoading } = useUserCounts();
+  const { signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState("users");
 
-  const isLoading = propertiesLoading || buyersLoading;
+  const isLoading = propertiesLoading || profilesLoading || countsLoading;
 
-  const activeProperties = properties.filter((p) => p.status === "available").length;
-  const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
-
-  const recentProperties = properties.slice(0, 4);
-  const recentBuyers = buyers.slice(0, 4);
-
-  const getStatusColor = (status: string | null) => {
-    const colors: Record<string, string> = {
-      available: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      sold: "bg-blue-100 text-blue-700 border-blue-200",
-      rented: "bg-purple-100 text-purple-700 border-purple-200",
-      pending: "bg-amber-100 text-amber-700 border-amber-200",
-    };
-    return colors[status || ""] || "bg-gray-100 text-gray-700";
-  };
-
-  const getStatusLabel = (status: string | null) => {
-    const labels: Record<string, string> = {
-      available: "פעיל",
-      sold: "נמכר",
-      rented: "מושכר",
-      pending: "בהמתנה",
-    };
-    return labels[status || ""] || status || "לא ידוע";
+  const getRoleBadge = (role: ProfileWithRole["role"]) => {
+    switch (role) {
+      case "client":
+        return (
+          <Badge className="bg-sky-100 text-sky-600 border-sky-200 hover:bg-sky-100">
+            לקוח
+          </Badge>
+        );
+      case "agent":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-600 border-emerald-200 hover:bg-emerald-100">
+            סוכן
+          </Badge>
+        );
+      case "admin":
+        return (
+          <Badge className="bg-rose-100 text-rose-600 border-rose-200 hover:bg-rose-100">
+            מנהל
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="text-muted-foreground">
+            לא מוגדר
+          </Badge>
+        );
+    }
   };
 
   if (isLoading) {
@@ -51,120 +59,143 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="animate-fade-in">
-          <h1 className="text-3xl font-bold text-foreground">לוח בקרה</h1>
-          <p className="mt-2 text-muted-foreground">ברוכים הבאים ל-EXTRAMILE - סקירה כללית</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <Home className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">לוח בקרה - מנהל</h1>
+              <p className="text-sm text-muted-foreground">EXTRAMILE</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="default" className="gap-2">
+              <Upload className="h-4 w-4" />
+              סנכרון מ-Webtiv
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4" />
+              יציאה
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="נכסים פעילים"
-            value={activeProperties}
-            icon={Building2}
-            variant="gold"
-          />
-          <StatCard
-            title="סה״כ קונים"
-            value={buyers.length}
-            icon={Users}
-            variant="navy"
-          />
-          <StatCard
-            title="סה״כ שווי נכסים"
-            value={formatPrice(totalValue)}
-            icon={TrendingUp}
-          />
-          <StatCard
-            title="סה״כ נכסים"
-            value={properties.length}
-            icon={Building2}
-          />
-        </div>
-
-        {/* Recent Activity Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Properties */}
-          <Card className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold">נכסים אחרונים</CardTitle>
-              <Building2 className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentProperties.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">אין נכסים להצגה</p>
-                ) : (
-                  recentProperties.map((property) => (
-                    <div
-                      key={property.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{property.address}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {property.city} • {property.rooms || 0} חדרים
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className={getStatusColor(property.status)}>
-                          {getStatusLabel(property.status)}
-                        </Badge>
-                        <span className="font-semibold text-primary">
-                          {formatPrice(property.price)}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="border-border">
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <p className="text-sm text-muted-foreground">לקוחות</p>
+                <p className="text-3xl font-bold text-foreground">{counts?.clients || 0}</p>
               </div>
+              <Users className="h-6 w-6 text-muted-foreground" />
             </CardContent>
           </Card>
+          <Card className="border-border">
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <p className="text-sm text-muted-foreground">סוכנים</p>
+                <p className="text-3xl font-bold text-foreground">{counts?.agents || 0}</p>
+              </div>
+              <UserPlus className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+          <Card className="border-border">
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <p className="text-sm text-muted-foreground">נכסים</p>
+                <p className="text-3xl font-bold text-foreground">{properties.length}</p>
+              </div>
+              <Home className="h-6 w-6 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Recent Buyers */}
-          <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-semibold">קונים אחרונים</CardTitle>
-              <Users className="h-5 w-5 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
+        {/* Navigation Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+          <TabsList className="w-full justify-start bg-muted/50 p-1">
+            <TabsTrigger value="users" className="flex-1">משתמשים</TabsTrigger>
+            <TabsTrigger value="properties" className="flex-1">נכסים</TabsTrigger>
+            <TabsTrigger value="buyers" className="flex-1">כל הקונים</TabsTrigger>
+            <TabsTrigger value="technical" className="flex-1">נתונים טכניים</TabsTrigger>
+            <TabsTrigger value="neighborhoods" className="flex-1">שכונות</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* User Management Section */}
+        {activeTab === "users" && (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-foreground">ניהול משתמשים</h2>
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  הוסף משתמש
+                </Button>
+              </div>
+
               <div className="space-y-4">
-                {recentBuyers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">אין קונים להצגה</p>
+                {profiles.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">אין משתמשים להצגה</p>
                 ) : (
-                  recentBuyers.map((buyer) => (
-                    <div
-                      key={buyer.id}
-                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                          <span className="text-sm font-semibold text-primary">
-                            {buyer.full_name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .slice(0, 2)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{buyer.full_name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {buyer.budget_min || buyer.budget_max
-                              ? `${formatPrice(buyer.budget_min)} - ${formatPrice(buyer.budget_max)}`
-                              : "תקציב לא צוין"}
+                  profiles.map((profile) => (
+                    <Card key={profile.id} className="border-border">
+                      <CardContent className="flex items-center justify-between p-4">
+                        <div>{getRoleBadge(profile.role)}</div>
+                        <div className="text-left">
+                          <p className="font-semibold text-foreground">
+                            {profile.full_name || "ללא שם"}
                           </p>
+                          {profile.email && (
+                            <p className="text-sm text-primary">{profile.email}</p>
+                          )}
+                          {profile.phone && (
+                            <p className="text-sm text-primary">{profile.phone}</p>
+                          )}
                         </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))
                 )}
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        {activeTab === "properties" && (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground py-8">עבור לעמוד נכסים לצפייה מלאה</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "buyers" && (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground py-8">עבור לעמוד קונים לצפייה מלאה</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "technical" && (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground py-8">נתונים טכניים יופיעו כאן</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "neighborhoods" && (
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground py-8">שכונות יופיעו כאן</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
