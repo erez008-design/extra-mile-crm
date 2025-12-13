@@ -66,12 +66,8 @@ interface BuyerMessage {
   message: string;
   created_at: string;
   buyer_id: string;
+  agent_id: string;
   property_id: string | null;
-  buyers: Buyer;
-  properties?: {
-    address: string;
-    city: string;
-  };
 }
 
 interface TasteProfile {
@@ -544,21 +540,7 @@ export const BuyerManagement = () => {
 
     const { data } = await supabase
       .from("buyer_messages")
-      .select(
-        `
-        *,
-        buyers (
-          id,
-          full_name,
-          phone,
-          created_at
-        ),
-        properties (
-          address,
-          city
-        )
-      `,
-      )
+      .select("*")
       .eq("agent_id", agentId)
       .order("created_at", { ascending: false });
 
@@ -1483,22 +1465,17 @@ export const BuyerManagement = () => {
             {messages.length === 0 ? (
               <p className="text-muted-foreground text-center py-4">אין הודעות</p>
             ) : (
-              messages.map((msg) => (
+                messages.map((msg) => (
                 <div key={msg.id} className="p-4 border rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">{msg.buyers.full_name}</p>
-                      <p className="text-sm text-muted-foreground" dir="ltr">
-                        {msg.buyers.phone}
+                      <p className="font-medium">הודעה מלקוח</p>
+                      <p className="text-sm text-muted-foreground">
+                        מזהה: {msg.buyer_id.slice(0, 8)}...
                       </p>
                     </div>
                     <Badge variant="secondary">{new Date(msg.created_at).toLocaleDateString("he-IL")}</Badge>
                   </div>
-                  {msg.properties && (
-                    <p className="text-sm text-muted-foreground">
-                      נכס: {msg.properties.address}, {msg.properties.city}
-                    </p>
-                  )}
                   <p className="text-sm bg-muted p-3 rounded">{msg.message}</p>
                 </div>
               ))

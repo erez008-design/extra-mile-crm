@@ -22,7 +22,6 @@ interface Property {
   floor: number | null;
   description: string | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
-  property_documents: Array<{ id: string; title: string; url: string }>;
 }
 
 interface BuyerProperty {
@@ -89,8 +88,7 @@ const BuyerPropertyDetails = () => {
         *,
         properties (
           *,
-          property_images (url, is_primary),
-          property_documents (id, title, url)
+          property_images (url, is_primary)
         )
       `)
       .eq("buyer_id", buyerId)
@@ -440,33 +438,6 @@ const BuyerPropertyDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Documents */}
-            {property.property_documents?.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-primary" />
-                    מסמכים
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {property.property_documents.map((doc) => (
-                      <a
-                        key={doc.id}
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted transition-colors"
-                      >
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">{doc.title}</span>
-                      </a>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Right Column - Client Interactions */}

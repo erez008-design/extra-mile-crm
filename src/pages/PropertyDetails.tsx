@@ -38,7 +38,7 @@ interface Property {
   parking_spots: number | null;
   has_safe_room: boolean | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
-  property_documents: Array<{ id: string; title: string; url: string }>;
+  property_documents?: Array<{ id: string; title: string; url: string }>;
 }
 
 const PropertyDetails = () => {
@@ -90,11 +90,6 @@ const PropertyDetails = () => {
         property_images (
           url,
           is_primary
-        ),
-        property_documents (
-          id,
-          title,
-          url
         )
       `)
       .eq("id", id)

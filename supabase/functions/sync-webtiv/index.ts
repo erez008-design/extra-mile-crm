@@ -42,16 +42,22 @@ serve(async (req) => {
       })
     }
 
-    // Check if user has agent or admin role
-    const { data: hasRole, error: roleError } = await supabaseClient.rpc('has_role', { _role: 'agent' })
-    const { data: isAdmin, error: adminError } = await supabaseClient.rpc('has_role', { _role: 'admin' })
+    // Check if user has agent or admin role by querying user_roles directly
+    const { data: userRoles, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['agent', 'admin'])
     
-    if (roleError || adminError || (!hasRole && !isAdmin)) {
+    if (roleError || !userRoles || userRoles.length === 0) {
+      console.log('Role check failed:', { userId: user.id, roleError, userRoles })
       return new Response(JSON.stringify({ error: 'Forbidden: Agent or Admin role required' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+    
+    console.log('User authorized with roles:', userRoles.map(r => r.role))
 
     // Use service role for data operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey)

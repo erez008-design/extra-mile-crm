@@ -11,16 +11,9 @@ interface BuyerMessage {
   id: string;
   buyer_id: string;
   property_id: string | null;
+  agent_id: string;
   message: string;
   created_at: string;
-  buyers: {
-    full_name: string;
-    phone: string;
-  };
-  properties?: {
-    address: string;
-    city: string;
-  };
 }
 
 export const BuyerMessagesTab = () => {
@@ -43,11 +36,7 @@ export const BuyerMessagesTab = () => {
 
       const { data, error } = await supabase
         .from("buyer_messages")
-        .select(`
-          *,
-          buyers (full_name, phone),
-          properties (address, city)
-        `)
+        .select("*")
         .eq("agent_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -91,22 +80,13 @@ export const BuyerMessagesTab = () => {
           <CardContent className="p-4">
             <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="font-semibold text-lg">{message.buyers.full_name}</h3>
-                <p className="text-sm text-muted-foreground">{message.buyers.phone}</p>
+                <h3 className="font-semibold text-lg">הודעה מלקוח</h3>
+                <p className="text-sm text-muted-foreground">מזהה: {message.buyer_id.slice(0, 8)}...</p>
               </div>
               <Badge variant="secondary">
                 {format(new Date(message.created_at), "d MMMM yyyy, HH:mm", { locale: he })}
               </Badge>
             </div>
-            
-            {message.properties && (
-              <div className="mb-3 p-2 bg-muted/50 rounded">
-                <p className="text-sm font-medium">נכס מקושר:</p>
-                <p className="text-sm text-muted-foreground">
-                  {message.properties.address}, {message.properties.city}
-                </p>
-              </div>
-            )}
             
             <div className="bg-muted p-3 rounded-md">
               <p className="text-sm whitespace-pre-wrap">{message.message}</p>
