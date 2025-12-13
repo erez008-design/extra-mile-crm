@@ -221,12 +221,7 @@ export const BuyerManagement = () => {
               address,
               city,
               price,
-              rooms,
-              property_documents (
-                id,
-                title,
-                url
-              )
+              rooms
             )
           )
         )
