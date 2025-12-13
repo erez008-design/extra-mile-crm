@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Phone, Users, Loader2 } from "lucide-react";
+import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useBuyers } from "@/hooks/useBuyers";
+import { useBuyers, BuyerData } from "@/hooks/useBuyers";
 import { formatPrice } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +20,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SmartMatchingModal } from "@/components/buyers/SmartMatchingModal";
 
 export default function Buyers() {
   const { data: buyers = [], isLoading, error } = useBuyers();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBuyer, setSelectedBuyer] = useState<BuyerData | null>(null);
+  const [matchingModalOpen, setMatchingModalOpen] = useState(false);
 
   const filteredBuyers = buyers.filter(
     (buyer) =>
       buyer.full_name.includes(searchQuery) ||
       (buyer.phone?.includes(searchQuery) ?? false)
   );
+
+  const handleSmartMatch = (buyer: BuyerData) => {
+    setSelectedBuyer(buyer);
+    setMatchingModalOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -92,6 +100,7 @@ export default function Buyers() {
                 <TableHead className="text-right font-semibold">תקציב</TableHead>
                 <TableHead className="text-right font-semibold">אזורים</TableHead>
                 <TableHead className="text-right font-semibold">חדרים</TableHead>
+                <TableHead className="text-right font-semibold">התאמה חכמה</TableHead>
                 <TableHead className="text-right font-semibold w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -152,6 +161,17 @@ export default function Buyers() {
                     {buyer.min_rooms ? `${buyer.min_rooms}+` : "-"}
                   </TableCell>
                   <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-accent hover:text-accent hover:bg-accent/10 border-accent/30"
+                      onClick={() => handleSmartMatch(buyer)}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      התאמה חכמה
+                    </Button>
+                  </TableCell>
+                  <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -160,7 +180,9 @@ export default function Buyers() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
                         <DropdownMenuItem>עריכה</DropdownMenuItem>
-                        <DropdownMenuItem>התאמת נכסים</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSmartMatch(buyer)}>
+                          התאמת נכסים
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -178,6 +200,13 @@ export default function Buyers() {
           )}
         </div>
       </div>
+
+      {/* Smart Matching Modal */}
+      <SmartMatchingModal
+        buyer={selectedBuyer}
+        open={matchingModalOpen}
+        onOpenChange={setMatchingModalOpen}
+      />
     </DashboardLayout>
   );
 }
