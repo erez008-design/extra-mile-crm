@@ -38,6 +38,8 @@ const Agent = () => {
   const [exclusionReasons, setExclusionReasons] = useState<Array<{reason: string; count: number}>>([]);
   const [analyticsStartDate, setAnalyticsStartDate] = useState<Date | null>(subDays(new Date(), 30));
   const [analyticsEndDate, setAnalyticsEndDate] = useState<Date | null>(new Date());
+  const [unassignedProperties, setUnassignedProperties] = useState([]);
+  const [claimingPropertyId, setClaimingPropertyId] = useState<string | null>(null);
   
   // Removed old invite system - now using buyer management
 
@@ -84,6 +86,7 @@ const Agent = () => {
 
       setCurrentUserId(session.user.id);
       fetchProperties();
+      fetchUnassignedProperties();
       fetchClients();
       fetchExclusionReasons(session.user.id, subDays(new Date(), 30), new Date());
     } catch (error) {
@@ -107,6 +110,65 @@ const Agent = () => {
 
     if (data) {
       setProperties(data);
+    }
+  };
+
+  const fetchUnassignedProperties = async () => {
+    // Fetch properties without an agent
+    const { data } = await supabase
+      .from("properties")
+      .select("*")
+      .is("agent_id", null)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setUnassignedProperties(data);
+    }
+  };
+
+  const handleClaimProperty = async (propertyId: string) => {
+    if (!currentUserId) return;
+    
+    setClaimingPropertyId(propertyId);
+    try {
+      const { error } = await supabase
+        .from("properties")
+        .update({ agent_id: currentUserId })
+        .eq("id", propertyId);
+
+      if (error) throw error;
+
+      toast.success("הנכס שויך אליך בהצלחה");
+      fetchProperties();
+      fetchUnassignedProperties();
+    } catch (error) {
+      console.error("Error claiming property:", error);
+      toast.error("שגיאה בשיוך הנכס");
+    } finally {
+      setClaimingPropertyId(null);
+    }
+  };
+
+  const handleClaimAllProperties = async () => {
+    if (!currentUserId || unassignedProperties.length === 0) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("properties")
+        .update({ agent_id: currentUserId })
+        .is("agent_id", null);
+
+      if (error) throw error;
+
+      toast.success(`${unassignedProperties.length} נכסים שויכו אליך בהצלחה`);
+      fetchProperties();
+      fetchUnassignedProperties();
+    } catch (error) {
+      console.error("Error claiming all properties:", error);
+      toast.error("שגיאה בשיוך הנכסים");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -608,93 +670,148 @@ const Agent = () => {
           </TabsContent>
 
           <TabsContent value="manage">
-            <Card>
-              <CardHeader>
-                <CardTitle>הנכסים שלי</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {properties.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">אין נכסים עדיין</p>
-                  ) : (
-                    properties.map((property: any) => (
-                      <div
-                        key={property.id}
-                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                      >
-                        <div 
-                          className="flex-1 cursor-pointer"
-                          onClick={() => navigate(`/property/${property.id}`)}
+            <div className="space-y-6">
+              {/* Unassigned Properties Section */}
+              {unassignedProperties.length > 0 && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-amber-800">נכסים ללא שיוך ({unassignedProperties.length})</CardTitle>
+                    <Button 
+                      onClick={handleClaimAllProperties}
+                      disabled={loading}
+                      size="sm"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Plus className="w-4 h-4 ml-1" />}
+                      שייך את כולם אליי
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {unassignedProperties.map((property: any) => (
+                        <div
+                          key={property.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-white hover:bg-muted/50 transition-colors"
                         >
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex-1">
                             <div className="font-medium">{property.address}</div>
+                            <div className="text-sm text-muted-foreground">{property.city}</div>
                           </div>
-                          <div className="text-sm text-muted-foreground">{property.city}</div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-lg font-semibold text-primary">
-                            ₪{property.price.toLocaleString()}
-                          </div>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="text-base font-semibold text-primary">
+                              {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                            </div>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => sendToWebtiv(property)}
-                              disabled={loading}
+                              onClick={() => handleClaimProperty(property.id)}
+                              disabled={claimingPropertyId === property.id}
                             >
-                              <Send className="w-4 h-4 ml-1" />
-                              Webtiv CRM
+                              {claimingPropertyId === property.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 ml-1" />
+                                  שייך אליי
+                                </>
+                              )}
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                setSelectedProperty(property.id);
-                                setShowAssignDialog(true);
-                              }}
-                            >
-                              <Users className="w-4 h-4 ml-1" />
-                              שלח ללקוחות
-                            </Button>
-                            {/* Delete button - only show if agent created this property */}
-                            {property.created_by === currentUserId && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent dir="rtl">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>מחיקת נכס</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      האם אתה בטוח שברצונך למחוק את הנכס "{property.address}"?
-                                      פעולה זו אינה ניתנת לביטול.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter className="flex-row-reverse gap-2">
-                                    <AlertDialogCancel>ביטול</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteProperty(property.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      מחק נכס
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* My Properties Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>הנכסים שלי</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {properties.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">אין נכסים עדיין</p>
+                    ) : (
+                      properties.map((property: any) => (
+                        <div
+                          key={property.id}
+                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                        >
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => navigate(`/property/${property.id}`)}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="font-medium">{property.address}</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">{property.city}</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-lg font-semibold text-primary">
+                              {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => sendToWebtiv(property)}
+                                disabled={loading}
+                              >
+                                <Send className="w-4 h-4 ml-1" />
+                                Webtiv CRM
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedProperty(property.id);
+                                  setShowAssignDialog(true);
+                                }}
+                              >
+                                <Users className="w-4 h-4 ml-1" />
+                                שלח ללקוחות
+                              </Button>
+                              {/* Delete button - only show if agent created this property */}
+                              {property.created_by === currentUserId && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent dir="rtl">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>מחיקת נכס</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        האם אתה בטוח שברצונך למחוק את הנכס "{property.address}"?
+                                        פעולה זו אינה ניתנת לביטול.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="flex-row-reverse gap-2">
+                                      <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteProperty(property.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        מחק נכס
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="buyers">
