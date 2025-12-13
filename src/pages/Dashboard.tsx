@@ -1,30 +1,53 @@
-import { Building2, Users, TrendingUp, Calendar } from "lucide-react";
+import { Building2, Users, TrendingUp, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { mockProperties, mockBuyers, formatPrice } from "@/data/mockData";
+import { useProperties } from "@/hooks/useProperties";
+import { useBuyers } from "@/hooks/useBuyers";
+import { formatPrice } from "@/lib/formatPrice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
-  const activeProperties = mockProperties.filter(p => p.status === "פעיל").length;
-  const hotBuyers = mockBuyers.filter(b => b.status === "חם").length;
-  const totalValue = mockProperties.reduce((sum, p) => sum + p.price, 0);
+  const { data: properties = [], isLoading: propertiesLoading } = useProperties();
+  const { data: buyers = [], isLoading: buyersLoading } = useBuyers();
 
-  const recentProperties = mockProperties.slice(0, 4);
-  const recentBuyers = mockBuyers.slice(0, 4);
+  const isLoading = propertiesLoading || buyersLoading;
 
-  const getStatusColor = (status: string) => {
+  const activeProperties = properties.filter((p) => p.status === "available").length;
+  const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
+
+  const recentProperties = properties.slice(0, 4);
+  const recentBuyers = buyers.slice(0, 4);
+
+  const getStatusColor = (status: string | null) => {
     const colors: Record<string, string> = {
-      "פעיל": "bg-emerald-100 text-emerald-700 border-emerald-200",
-      "נמכר": "bg-blue-100 text-blue-700 border-blue-200",
-      "מושכר": "bg-purple-100 text-purple-700 border-purple-200",
-      "בהמתנה": "bg-amber-100 text-amber-700 border-amber-200",
-      "חם": "bg-red-100 text-red-700 border-red-200",
-      "קר": "bg-slate-100 text-slate-700 border-slate-200",
-      "סגור": "bg-gray-100 text-gray-700 border-gray-200",
+      available: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      sold: "bg-blue-100 text-blue-700 border-blue-200",
+      rented: "bg-purple-100 text-purple-700 border-purple-200",
+      pending: "bg-amber-100 text-amber-700 border-amber-200",
     };
-    return colors[status] || "bg-gray-100 text-gray-700";
+    return colors[status || ""] || "bg-gray-100 text-gray-700";
   };
+
+  const getStatusLabel = (status: string | null) => {
+    const labels: Record<string, string> = {
+      available: "פעיל",
+      sold: "נמכר",
+      rented: "מושכר",
+      pending: "בהמתנה",
+    };
+    return labels[status || ""] || status || "לא ידוע";
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -41,14 +64,12 @@ export default function Dashboard() {
             title="נכסים פעילים"
             value={activeProperties}
             icon={Building2}
-            trend={{ value: 12, isPositive: true }}
             variant="gold"
           />
           <StatCard
-            title="קונים חמים"
-            value={hotBuyers}
+            title="סה״כ קונים"
+            value={buyers.length}
             icon={Users}
-            trend={{ value: 8, isPositive: true }}
             variant="navy"
           />
           <StatCard
@@ -57,10 +78,9 @@ export default function Dashboard() {
             icon={TrendingUp}
           />
           <StatCard
-            title="עסקאות החודש"
-            value="3"
-            icon={Calendar}
-            trend={{ value: 25, isPositive: true }}
+            title="סה״כ נכסים"
+            value={properties.length}
+            icon={Building2}
           />
         </div>
 
@@ -74,23 +94,31 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentProperties.map((property) => (
-                  <div
-                    key={property.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{property.address}</p>
-                      <p className="text-sm text-muted-foreground">{property.city} • {property.rooms} חדרים</p>
+                {recentProperties.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">אין נכסים להצגה</p>
+                ) : (
+                  recentProperties.map((property) => (
+                    <div
+                      key={property.id}
+                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{property.address}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {property.city} • {property.rooms || 0} חדרים
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={getStatusColor(property.status)}>
+                          {getStatusLabel(property.status)}
+                        </Badge>
+                        <span className="font-semibold text-primary">
+                          {formatPrice(property.price)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className={getStatusColor(property.status)}>
-                        {property.status}
-                      </Badge>
-                      <span className="font-semibold text-primary">{formatPrice(property.price)}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -103,29 +131,36 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentBuyers.map((buyer) => (
-                  <div
-                    key={buyer.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-sm font-semibold text-primary">
-                          {buyer.name.split(" ").map(n => n[0]).join("")}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{buyer.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatPrice(buyer.budget.min)} - {formatPrice(buyer.budget.max)}
-                        </p>
+                {recentBuyers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">אין קונים להצגה</p>
+                ) : (
+                  recentBuyers.map((buyer) => (
+                    <div
+                      key={buyer.id}
+                      className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <span className="text-sm font-semibold text-primary">
+                            {buyer.full_name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{buyer.full_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {buyer.budget_min || buyer.budget_max
+                              ? `${formatPrice(buyer.budget_min)} - ${formatPrice(buyer.budget_max)}`
+                              : "תקציב לא צוין"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className={getStatusColor(buyer.status)}>
-                      {buyer.status}
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
