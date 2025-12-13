@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { propertySchema } from "@/lib/validations";
 import { BuyerManagement } from "@/components/BuyerManagement";
@@ -40,6 +41,8 @@ const Agent = () => {
   const [analyticsEndDate, setAnalyticsEndDate] = useState<Date | null>(new Date());
   const [unassignedProperties, setUnassignedProperties] = useState([]);
   const [claimingPropertyId, setClaimingPropertyId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [agents, setAgents] = useState<Array<{id: string; full_name: string | null; email: string | null}>>([]);
   
   // Removed old invite system - now using buyer management
 
@@ -84,11 +87,20 @@ const Agent = () => {
         return;
       }
 
+      // Check if user is admin
+      const userIsAdmin = roles.some((r: any) => r.role === 'admin');
+      setIsAdmin(userIsAdmin);
+
       setCurrentUserId(session.user.id);
       fetchProperties();
       fetchUnassignedProperties();
       fetchClients();
       fetchExclusionReasons(session.user.id, subDays(new Date(), 30), new Date());
+      
+      // If admin, also fetch list of agents for assignment
+      if (userIsAdmin) {
+        fetchAgents();
+      }
     } catch (error) {
       console.error("Auth check error:", error);
       navigate("/auth");
@@ -126,19 +138,21 @@ const Agent = () => {
     }
   };
 
-  const handleClaimProperty = async (propertyId: string) => {
-    if (!currentUserId) return;
+  const handleClaimProperty = async (propertyId: string, agentId?: string) => {
+    const targetAgentId = agentId || currentUserId;
+    if (!targetAgentId) return;
     
     setClaimingPropertyId(propertyId);
     try {
       const { error } = await supabase
         .from("properties")
-        .update({ agent_id: currentUserId })
+        .update({ agent_id: targetAgentId })
         .eq("id", propertyId);
 
       if (error) throw error;
 
-      toast.success("הנכס שויך אליך בהצלחה");
+      const isOwnAssignment = targetAgentId === currentUserId;
+      toast.success(isOwnAssignment ? "הנכס שויך אליך בהצלחה" : "הנכס שויך לסוכן בהצלחה");
       fetchProperties();
       fetchUnassignedProperties();
     } catch (error) {
@@ -149,8 +163,9 @@ const Agent = () => {
     }
   };
 
-  const handleClaimAllProperties = async () => {
-    if (!currentUserId || unassignedProperties.length === 0) return;
+  const handleClaimAllProperties = async (agentId?: string) => {
+    const targetAgentId = agentId || currentUserId;
+    if (!targetAgentId || unassignedProperties.length === 0) return;
     
     setLoading(true);
     try {
@@ -169,6 +184,27 @@ const Agent = () => {
       toast.error("שגיאה בשיוך הנכסים");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAgents = async () => {
+    // Get all agents by checking user_roles table
+    const { data: agentRoles } = await (supabase as any)
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "agent");
+
+    if (agentRoles && agentRoles.length > 0) {
+      const agentIds = agentRoles.map((r: any) => r.user_id);
+      
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", agentIds);
+
+      if (data) {
+        setAgents(data);
+      }
     }
   };
 
@@ -671,62 +707,10 @@ const Agent = () => {
 
           <TabsContent value="manage">
             <div className="space-y-6">
-              {/* Unassigned Properties Section */}
-              {unassignedProperties.length > 0 && (
-                <Card className="border-amber-200 bg-amber-50/50">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-amber-800">נכסים ללא שיוך ({unassignedProperties.length})</CardTitle>
-                    <Button 
-                      onClick={handleClaimAllProperties}
-                      disabled={loading}
-                      size="sm"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Plus className="w-4 h-4 ml-1" />}
-                      שייך את כולם אליי
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {unassignedProperties.map((property: any) => (
-                        <div
-                          key={property.id}
-                          className="flex items-center justify-between p-3 rounded-lg border bg-white hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium">{property.address}</div>
-                            <div className="text-sm text-muted-foreground">{property.city}</div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-base font-semibold text-primary">
-                              {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleClaimProperty(property.id)}
-                              disabled={claimingPropertyId === property.id}
-                            >
-                              {claimingPropertyId === property.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <Plus className="w-4 h-4 ml-1" />
-                                  שייך אליי
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* My Properties Section */}
+              {/* My Properties Section - Now First */}
               <Card>
                 <CardHeader>
-                  <CardTitle>הנכסים שלי</CardTitle>
+                  <CardTitle>הנכסים שלי ({properties.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -811,6 +795,88 @@ const Agent = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Unassigned Properties Section - Now Second */}
+              {unassignedProperties.length > 0 && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-amber-800">נכסים ללא שיוך ({unassignedProperties.length})</CardTitle>
+                    <div className="flex items-center gap-2">
+                      {isAdmin && agents.length > 0 && (
+                        <Select onValueChange={(agentId) => handleClaimAllProperties(agentId)}>
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="שייך כולם לסוכן..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agents.map((agent) => (
+                              <SelectItem key={agent.id} value={agent.id}>
+                                {agent.full_name || agent.email || 'סוכן'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <Button 
+                        onClick={() => handleClaimAllProperties()}
+                        disabled={loading}
+                        size="sm"
+                      >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Plus className="w-4 h-4 ml-1" />}
+                        שייך את כולם אליי
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {unassignedProperties.map((property: any) => (
+                        <div
+                          key={property.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-white hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{property.address}</div>
+                            <div className="text-sm text-muted-foreground">{property.city}</div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-base font-semibold text-primary">
+                              {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                            </div>
+                            {isAdmin && agents.length > 0 && (
+                              <Select onValueChange={(agentId) => handleClaimProperty(property.id, agentId)}>
+                                <SelectTrigger className="w-[140px]">
+                                  <SelectValue placeholder="שייך לסוכן..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {agents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                      {agent.full_name || agent.email || 'סוכן'}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleClaimProperty(property.id)}
+                              disabled={claimingPropertyId === property.id}
+                            >
+                              {claimingPropertyId === property.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="w-4 h-4 ml-1" />
+                                  שייך אליי
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
