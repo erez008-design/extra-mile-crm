@@ -35,7 +35,6 @@ interface Property {
   size_sqm: number | null;
   description: string | null;
   property_images: { url: string; is_primary: boolean }[];
-  property_documents: { id: string; title: string; url: string }[];
 }
 
 interface BuyerProperty {
@@ -122,8 +121,7 @@ const Buyer = () => {
           *,
           properties (
             *,
-            property_images (url, is_primary),
-            property_documents (id, title, url)
+            property_images (url, is_primary)
           )
         `)
         .eq("buyer_id", buyerId)
@@ -383,7 +381,7 @@ const Buyer = () => {
     const sortedImages = [...images].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
     const selectedImageIndex = selectedImages[buyerProperty.id] || 0;
     const currentImage = sortedImages[selectedImageIndex]?.url;
-    const documents = property.property_documents || [];
+    // Documents functionality removed - no FK relationship in DB
     const form = insightsForms[buyerProperty.id];
     const isEditing = !!form;
     const unsaved = hasUnsavedChanges(buyerProperty);
@@ -515,27 +513,7 @@ const Buyer = () => {
             </div>
           )}
 
-          {documents.length > 0 && (
-            <div className="bg-muted/50 p-3 rounded-md mb-3">
-              <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                מסמכים ({documents.length})
-              </p>
-              <div className="space-y-1">
-                {documents.map((doc: any) => (
-                  <a
-                    key={doc.id}
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline block truncate"
-                  >
-                    📄 {doc.title}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Documents section removed - no FK relationship in DB */}
 
           {/* Property Insights Form */}
           <Card className={`border-2 mb-3 ${unsaved ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : 'border-primary/20'}`}>
