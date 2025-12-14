@@ -426,12 +426,15 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
+          air_directions: string | null
+          build_year: number | null
           city: string
           created_at: string | null
           created_by: string | null
           description: string | null
           drive_folder_id: string | null
           floor: number | null
+          has_balcony: boolean | null
           has_elevator: boolean | null
           has_safe_room: boolean | null
           has_sun_balcony: boolean | null
@@ -439,20 +442,25 @@ export type Database = {
           neighborhood: string | null
           parking_spots: number | null
           price: number | null
+          renovation_status: string | null
           rooms: number | null
           size_sqm: number | null
           status: string | null
+          total_floors: number | null
           updated_at: string | null
         }
         Insert: {
           address: string
           agent_id?: string | null
+          air_directions?: string | null
+          build_year?: number | null
           city: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           drive_folder_id?: string | null
           floor?: number | null
+          has_balcony?: boolean | null
           has_elevator?: boolean | null
           has_safe_room?: boolean | null
           has_sun_balcony?: boolean | null
@@ -460,20 +468,25 @@ export type Database = {
           neighborhood?: string | null
           parking_spots?: number | null
           price?: number | null
+          renovation_status?: string | null
           rooms?: number | null
           size_sqm?: number | null
           status?: string | null
+          total_floors?: number | null
           updated_at?: string | null
         }
         Update: {
           address?: string
           agent_id?: string | null
+          air_directions?: string | null
+          build_year?: number | null
           city?: string
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           drive_folder_id?: string | null
           floor?: number | null
+          has_balcony?: boolean | null
           has_elevator?: boolean | null
           has_safe_room?: boolean | null
           has_sun_balcony?: boolean | null
@@ -481,9 +494,11 @@ export type Database = {
           neighborhood?: string | null
           parking_spots?: number | null
           price?: number | null
+          renovation_status?: string | null
           rooms?: number | null
           size_sqm?: number | null
           status?: string | null
+          total_floors?: number | null
           updated_at?: string | null
         }
         Relationships: []

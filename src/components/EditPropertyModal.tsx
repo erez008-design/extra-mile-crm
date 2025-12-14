@@ -1,0 +1,322 @@
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
+interface EditPropertyModalProps {
+  property: any;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}
+
+const RENOVATION_STATUS_OPTIONS = [
+  { value: "new", label: "חדש מקבלן" },
+  { value: "renovated", label: "משופץ" },
+  { value: "good", label: "במצב טוב" },
+  { value: "needs_renovation", label: "לשיפוץ" },
+];
+
+const AIR_DIRECTION_OPTIONS = [
+  { value: "north", label: "צפון" },
+  { value: "south", label: "דרום" },
+  { value: "east", label: "מזרח" },
+  { value: "west", label: "מערב" },
+];
+
+export function EditPropertyModal({ property, open, onOpenChange, onSaved }: EditPropertyModalProps) {
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    address: "",
+    city: "",
+    price: "",
+    size_sqm: "",
+    rooms: "",
+    floor: "",
+    total_floors: "",
+    air_directions: "",
+    renovation_status: "",
+    build_year: "",
+    parking_spots: "",
+    has_elevator: false,
+    has_balcony: false,
+    has_safe_room: false,
+    has_sun_balcony: false,
+    description: "",
+  });
+
+  useEffect(() => {
+    if (property && open) {
+      setFormData({
+        address: property.address || "",
+        city: property.city || "",
+        price: property.price?.toString() || "",
+        size_sqm: property.size_sqm?.toString() || "",
+        rooms: property.rooms?.toString() || "",
+        floor: property.floor?.toString() || "",
+        total_floors: property.total_floors?.toString() || "",
+        air_directions: property.air_directions || "",
+        renovation_status: property.renovation_status || "",
+        build_year: property.build_year?.toString() || "",
+        parking_spots: property.parking_spots?.toString() || "",
+        has_elevator: property.has_elevator || false,
+        has_balcony: property.has_balcony || false,
+        has_safe_room: property.has_safe_room || false,
+        has_sun_balcony: property.has_sun_balcony || false,
+        description: property.description || "",
+      });
+    }
+  }, [property, open]);
+
+  const handleSave = async () => {
+    if (!property?.id) return;
+    
+    setSaving(true);
+    try {
+      const updateData = {
+        address: formData.address,
+        city: formData.city,
+        price: formData.price ? parseFloat(formData.price) : null,
+        size_sqm: formData.size_sqm ? parseInt(formData.size_sqm) : null,
+        rooms: formData.rooms ? parseFloat(formData.rooms) : null,
+        floor: formData.floor ? parseInt(formData.floor) : null,
+        total_floors: formData.total_floors ? parseInt(formData.total_floors) : null,
+        air_directions: formData.air_directions || null,
+        renovation_status: formData.renovation_status || null,
+        build_year: formData.build_year ? parseInt(formData.build_year) : null,
+        parking_spots: formData.parking_spots ? parseInt(formData.parking_spots) : null,
+        has_elevator: formData.has_elevator,
+        has_balcony: formData.has_balcony,
+        has_safe_room: formData.has_safe_room,
+        has_sun_balcony: formData.has_sun_balcony,
+        description: formData.description || null,
+      };
+
+      const { error } = await supabase
+        .from("properties")
+        .update(updateData)
+        .eq("id", property.id);
+
+      if (error) throw error;
+
+      toast.success("הנכס עודכן בהצלחה");
+      onSaved();
+      onOpenChange(false);
+    } catch (error: any) {
+      console.error("Error updating property:", error);
+      toast.error("שגיאה בעדכון הנכס: " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogHeader>
+          <DialogTitle>עריכת נכס - {property?.address}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="grid gap-6 py-4">
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">פרטים בסיסיים</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">כתובת</Label>
+                <Input
+                  id="edit-address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-city">עיר</Label>
+                <Input
+                  id="edit-city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">מחיר (₪)</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-size">גודל (מ"ר)</Label>
+                <Input
+                  id="edit-size"
+                  type="number"
+                  value={formData.size_sqm}
+                  onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-rooms">חדרים</Label>
+                <Input
+                  id="edit-rooms"
+                  type="number"
+                  step="0.5"
+                  value={formData.rooms}
+                  onChange={(e) => setFormData({ ...formData, rooms: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Building Info - Enrichment Fields */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">פרטי בניין</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-floor">קומה</Label>
+                <Input
+                  id="edit-floor"
+                  type="number"
+                  value={formData.floor}
+                  onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-total-floors">סה"כ קומות בבניין</Label>
+                <Input
+                  id="edit-total-floors"
+                  type="number"
+                  value={formData.total_floors}
+                  onChange={(e) => setFormData({ ...formData, total_floors: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-build-year">שנת בנייה</Label>
+                <Input
+                  id="edit-build-year"
+                  type="number"
+                  placeholder="למשל: 2015"
+                  value={formData.build_year}
+                  onChange={(e) => setFormData({ ...formData, build_year: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-parking">מס׳ חניות</Label>
+                <Input
+                  id="edit-parking"
+                  type="number"
+                  value={formData.parking_spots}
+                  onChange={(e) => setFormData({ ...formData, parking_spots: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-renovation">מצב הנכס</Label>
+                <Select
+                  value={formData.renovation_status}
+                  onValueChange={(value) => setFormData({ ...formData, renovation_status: value })}
+                >
+                  <SelectTrigger id="edit-renovation">
+                    <SelectValue placeholder="בחר מצב" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RENOVATION_STATUS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-air">כיווני אוויר</Label>
+                <Select
+                  value={formData.air_directions}
+                  onValueChange={(value) => setFormData({ ...formData, air_directions: value })}
+                >
+                  <SelectTrigger id="edit-air">
+                    <SelectValue placeholder="בחר כיוון" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AIR_DIRECTION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">תכונות</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox
+                  id="edit-elevator"
+                  checked={formData.has_elevator}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_elevator: checked as boolean })}
+                />
+                <Label htmlFor="edit-elevator" className="cursor-pointer">מעלית</Label>
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox
+                  id="edit-balcony"
+                  checked={formData.has_balcony}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_balcony: checked as boolean })}
+                />
+                <Label htmlFor="edit-balcony" className="cursor-pointer">מרפסת</Label>
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox
+                  id="edit-sun-balcony"
+                  checked={formData.has_sun_balcony}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_sun_balcony: checked as boolean })}
+                />
+                <Label htmlFor="edit-sun-balcony" className="cursor-pointer">מרפסת שמש</Label>
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <Checkbox
+                  id="edit-safe-room"
+                  checked={formData.has_safe_room}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_safe_room: checked as boolean })}
+                />
+                <Label htmlFor="edit-safe-room" className="cursor-pointer">ממ״ד</Label>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">תיאור</Label>
+            <Textarea
+              id="edit-description"
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="flex-row-reverse gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            ביטול
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+            שמור שינויים
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

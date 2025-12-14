@@ -7,17 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { LogOut, Building2, Plus, Upload, X, Users, Send, RefreshCw, FileText, Loader2, Trash2 } from "lucide-react";
+import { LogOut, Building2, Plus, Upload, X, Users, Send, RefreshCw, FileText, Loader2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { propertySchema } from "@/lib/validations";
 import { BuyerManagement } from "@/components/BuyerManagement";
 import { BuyerMessagesTab } from "@/components/BuyerMessagesTab";
 import { ExclusionAnalyticsChart } from "@/components/ExclusionAnalyticsChart";
+import { EditPropertyModal } from "@/components/EditPropertyModal";
+import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 import { subDays } from "date-fns";
 
 interface Client {
@@ -43,6 +46,9 @@ const Agent = () => {
   const [claimingPropertyId, setClaimingPropertyId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [agents, setAgents] = useState<Array<{id: string; full_name: string | null; email: string | null}>>([]);
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   
   // Removed old invite system - now using buyer management
 
@@ -709,88 +715,126 @@ const Agent = () => {
             <div className="space-y-6">
               {/* My Properties Section - Now First */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>הנכסים שלי ({properties.length})</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="show-incomplete" className="text-sm text-muted-foreground cursor-pointer">
+                      הצג חסרי מידע בלבד
+                    </Label>
+                    <Switch
+                      id="show-incomplete"
+                      checked={showIncompleteOnly}
+                      onCheckedChange={setShowIncompleteOnly}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {properties.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">אין נכסים עדיין</p>
                     ) : (
-                      properties.map((property: any) => (
-                        <div
-                          key={property.id}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                        >
-                          <div 
-                            className="flex-1 cursor-pointer"
-                            onClick={() => navigate(`/property/${property.id}`)}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="font-medium">{property.address}</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">{property.city}</div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-lg font-semibold text-primary">
-                              {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => sendToWebtiv(property)}
-                                disabled={loading}
+                      properties
+                        .filter((property: any) => !showIncompleteOnly || isPropertyIncomplete(property))
+                        .map((property: any) => {
+                          const incomplete = isPropertyIncomplete(property);
+                          return (
+                            <div
+                              key={property.id}
+                              className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                            >
+                              <div 
+                                className="flex-1 cursor-pointer"
+                                onClick={() => navigate(`/property/${property.id}`)}
                               >
-                                <Send className="w-4 h-4 ml-1" />
-                                Webtiv CRM
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedProperty(property.id);
-                                  setShowAssignDialog(true);
-                                }}
-                              >
-                                <Users className="w-4 h-4 ml-1" />
-                                שלח ללקוחות
-                              </Button>
-                              {/* Delete button - only show if agent created this property */}
-                              {property.created_by === currentUserId && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent dir="rtl">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>מחיקת נכס</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        האם אתה בטוח שברצונך למחוק את הנכס "{property.address}"?
-                                        פעולה זו אינה ניתנת לביטול.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="flex-row-reverse gap-2">
-                                      <AlertDialogCancel>ביטול</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteProperty(property.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        מחק נכס
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="font-medium">{property.address}</div>
+                                  {incomplete && (
+                                    <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 text-xs gap-1">
+                                      <AlertTriangle className="w-3 h-3" />
+                                      חסר מידע
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">{property.city}</div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-lg font-semibold text-primary">
+                                  {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                                </div>
+                                <div className="flex gap-2">
+                                  {/* Edit button */}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingProperty(property);
+                                      setShowEditModal(true);
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      sendToWebtiv(property);
+                                    }}
+                                    disabled={loading}
+                                  >
+                                    <Send className="w-4 h-4 ml-1" />
+                                    Webtiv CRM
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedProperty(property.id);
+                                      setShowAssignDialog(true);
+                                    }}
+                                  >
+                                    <Users className="w-4 h-4 ml-1" />
+                                    שלח ללקוחות
+                                  </Button>
+                                  {/* Delete button - only show if agent created this property */}
+                                  {property.created_by === currentUserId && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent dir="rtl">
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>מחיקת נכס</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            האם אתה בטוח שברצונך למחוק את הנכס "{property.address}"?
+                                            פעולה זו אינה ניתנת לביטול.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter className="flex-row-reverse gap-2">
+                                          <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleDeleteProperty(property.id)}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          >
+                                            מחק נכס
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                      ))
+                          );
+                        })
                     )}
                   </div>
                 </CardContent>
@@ -943,6 +987,14 @@ const Agent = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Property Modal */}
+        <EditPropertyModal
+          property={editingProperty}
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          onSaved={fetchProperties}
+        />
       </main>
     </div>
   );
