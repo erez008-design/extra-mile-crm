@@ -5,16 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download } from "lucide-react";
+import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download, AlertTriangle, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { createUserSchema } from "@/lib/validations";
 import { AdminNeighborhoodManager } from "@/components/AdminNeighborhoodManager";
 import { ExclusionAnalyticsChart } from "@/components/ExclusionAnalyticsChart";
 import { AdminPropertyExtendedDetails } from "@/components/AdminPropertyExtendedDetails";
 import { AdminAllBuyers } from "@/components/AdminAllBuyers";
+import { EditPropertyModal } from "@/components/EditPropertyModal";
+import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 import { subDays } from "date-fns";
 import { Settings2, ShoppingCart } from "lucide-react";
 
@@ -39,6 +42,8 @@ const Admin = () => {
   const [analyticsEndDate, setAnalyticsEndDate] = useState<Date | null>(new Date());
   const [selectedAgentForAnalytics, setSelectedAgentForAnalytics] = useState<string>("all");
   const [agents, setAgents] = useState<Array<{id: string; full_name: string | null; email: string}>>([]);
+  const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
+  const [editingProperty, setEditingProperty] = useState<any>(null);
 
   useEffect(() => {
     checkAuth();
@@ -546,9 +551,19 @@ const Admin = () => {
 
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
                     <CardTitle>ניהול נכסים</CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="showIncompleteOnly"
+                          checked={showIncompleteOnly}
+                          onCheckedChange={setShowIncompleteOnly}
+                        />
+                        <Label htmlFor="showIncompleteOnly" className="text-sm cursor-pointer">
+                          הצג חסרי מידע בלבד
+                        </Label>
+                      </div>
                       <Button variant="outline" onClick={handleExportCSV}>
                         <Download className="w-4 h-4 ml-2" />
                         ייצוא CSV
@@ -565,42 +580,72 @@ const Admin = () => {
                     {properties.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">אין נכסים עדיין</p>
                     ) : (
-                      properties.map((property: any) => (
-                        <div
-                          key={property.id}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                        >
-                          <div 
-                            className="flex-1 cursor-pointer" 
-                            onClick={() => navigate(`/property/${property.id}`)}
+                      properties
+                        .filter(property => !showIncompleteOnly || isPropertyIncomplete(property))
+                        .map((property: any) => (
+                          <div
+                            key={property.id}
+                            className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className="font-medium">{property.address}</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">{property.city}</div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-lg font-semibold text-primary">
-                              ₪{property.price?.toLocaleString() || 0}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteProperty(property.id);
-                              }}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            <div 
+                              className="flex-1 cursor-pointer" 
+                              onClick={() => navigate(`/property/${property.id}`)}
                             >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="font-medium">{property.address}</div>
+                                {isPropertyIncomplete(property) && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    חסר מידע
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground">{property.city}</div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-lg font-semibold text-primary">
+                                ₪{property.price?.toLocaleString() || 0}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingProperty(property);
+                                }}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteProperty(property.id);
+                                }}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))
                     )}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Edit Property Modal */}
+              <EditPropertyModal
+                property={editingProperty}
+                open={!!editingProperty}
+                onOpenChange={(open) => !open && setEditingProperty(null)}
+                onSaved={() => {
+                  setEditingProperty(null);
+                  fetchData();
+                }}
+              />
             </div>
           </TabsContent>
 
