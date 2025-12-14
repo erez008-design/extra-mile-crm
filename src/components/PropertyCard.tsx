@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Home, Maximize, Eye, Car, Sun, Shield, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, Maximize, Eye, Car, Sun, Shield, FileText, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 
 interface PropertyCardProps {
   property: {
@@ -14,6 +15,12 @@ interface PropertyCardProps {
     size_sqm: number | null;
     rooms: number | null;
     floor: number | null;
+    total_floors?: number | null;
+    air_directions?: string | null;
+    renovation_status?: string | null;
+    build_year?: number | null;
+    has_elevator?: boolean | null;
+    has_balcony?: boolean | null;
     description: string | null;
     has_sun_balcony: boolean | null;
     parking_spots: number | null;
@@ -53,6 +60,8 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     setSelectedImageIndex(prev => prev < sortedImages.length - 1 ? prev + 1 : 0);
   };
 
+  const incomplete = isPropertyIncomplete(property);
+
   return (
     <Card className="overflow-hidden hover:shadow-medium transition-all duration-300 group cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
       <div className="relative h-48 overflow-hidden">
@@ -61,9 +70,17 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           alt={property.address}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground">
-          זמין
-        </Badge>
+        <div className="absolute top-3 right-3 flex gap-2">
+          <Badge className="bg-accent text-accent-foreground">
+            זמין
+          </Badge>
+          {incomplete && (
+            <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              חסר מידע
+            </Badge>
+          )}
+        </div>
         
         {/* Image counter and navigation */}
         {sortedImages.length > 1 && (

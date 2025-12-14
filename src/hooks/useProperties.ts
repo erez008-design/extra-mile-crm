@@ -18,9 +18,14 @@ export interface PropertyData {
   size_sqm: number | null;
   rooms: number | null;
   floor: number | null;
+  total_floors: number | null;
+  air_directions: string | null;
+  renovation_status: string | null;
+  build_year: number | null;
   has_elevator: boolean | null;
   has_safe_room: boolean | null;
   has_sun_balcony: boolean | null;
+  has_balcony: boolean | null;
   parking_spots: number | null;
   description: string | null;
   status: string | null;
