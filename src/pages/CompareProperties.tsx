@@ -37,6 +37,7 @@ interface ExtendedDetailsRow {
   elevators_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
+  parking_type: string | null;
   has_storage: boolean | null;
   storage_size_sqm: number | null;
   balcony_size_sqm: number | null;
@@ -137,8 +138,20 @@ const CompareProperties = () => {
     return labels[level] || level;
   };
 
+  const getParkingTypeLabel = (type: string | null | undefined) => {
+    if (!type) return "";
+    const labels: Record<string, string> = {
+      regular: "רגילה",
+      underground: "תת קרקעית",
+      covered: "מקורה",
+      tandem: "עוקבת",
+      stacker: "מכפיל",
+    };
+    return labels[type] || type;
+  };
+
   const getValue = (item: ComparisonProperty, field: string): string => {
-    const prop = item.buyerProperty.properties;
+    const prop = item.buyerProperty.properties as any;
     const ext = item.extended;
 
     switch (field) {
@@ -158,16 +171,19 @@ const CompareProperties = () => {
         if (!ext) return "—";
         return ext.has_elevator ? (ext.elevators_count ? `${ext.elevators_count}` : "יש") : "אין";
       case "parking":
-        if (!ext) return "—";
-        let parkingText = ext.parking_count ? `${ext.parking_count}` : "0";
-        if (ext.parking_covered) parkingText += " (מקורה)";
-        return parkingText;
+        // Show parking count from properties table and type from extended details
+        const count = prop.parking_spots ?? ext?.parking_count ?? 0;
+        const typeLabel = getParkingTypeLabel(ext?.parking_type);
+        if (count === 0 && !typeLabel) return "אין";
+        return typeLabel ? `${count} (${typeLabel})` : `${count}`;
       case "storage":
         if (!ext) return "—";
         if (!ext.has_storage) return "אין";
-        return ext.storage_size_sqm ? `${ext.storage_size_sqm} מ״ר` : "יש";
+        return ext.storage_size_sqm ? `יש (${ext.storage_size_sqm} מ״ר)` : "יש";
       case "balcony":
-        return ext?.balcony_size_sqm ? `${ext.balcony_size_sqm} מ״ר` : "—";
+        // Check has_balcony from properties table, size from extended
+        if (!prop.has_balcony) return "אין";
+        return ext?.balcony_size_sqm ? `כן (${ext.balcony_size_sqm} מ״ר)` : "כן";
       case "renovation":
         return getRenovationLabel(ext?.renovation_level);
       case "bathrooms":
