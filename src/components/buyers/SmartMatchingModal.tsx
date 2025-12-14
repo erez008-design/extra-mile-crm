@@ -1,6 +1,8 @@
-import { Building2, MapPin, Maximize, X, Sparkles, Check } from "lucide-react";
+import { useState } from "react";
+import { Building2, MapPin, Maximize, Sparkles, Check, Send, Loader2 } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
 import { MatchedProperty, usePropertyMatching } from "@/hooks/usePropertyMatching";
+import { useMarkAsOffered, useOfferedProperties } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
 import {
   Dialog,
@@ -12,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface SmartMatchingModalProps {
   buyer: BuyerData | null;
@@ -22,11 +24,25 @@ interface SmartMatchingModalProps {
 
 export function SmartMatchingModal({ buyer, open, onOpenChange }: SmartMatchingModalProps) {
   const { data: matchedProperties = [], isLoading } = usePropertyMatching(open ? buyer : null);
+  const { data: offeredProperties = [] } = useOfferedProperties(open ? buyer?.id ?? null : null);
+  const markAsOfferedMutation = useMarkAsOffered();
+
+  const offeredPropertyIds = new Set(offeredProperties.map((p) => p.property_id));
 
   const getScoreColor = (score: number) => {
     if (score >= 70) return "bg-emerald-500";
     if (score >= 50) return "bg-amber-500";
     return "bg-orange-500";
+  };
+
+  const handleMarkAsOffered = async (propertyId: string) => {
+    if (!buyer) return;
+    try {
+      await markAsOfferedMutation.mutateAsync({ buyerId: buyer.id, propertyId });
+      toast({ title: "הנכס סומן כהוצע בהצלחה" });
+    } catch (error) {
+      toast({ title: "שגיאה בסימון הנכס", variant: "destructive" });
+    }
   };
 
   return (
@@ -74,7 +90,13 @@ export function SmartMatchingModal({ buyer, open, onOpenChange }: SmartMatchingM
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {matchedProperties.map((property) => (
-                  <PropertyMatchCard key={property.id} property={property} />
+                  <PropertyMatchCard 
+                    key={property.id} 
+                    property={property}
+                    isOffered={offeredPropertyIds.has(property.id)}
+                    onMarkAsOffered={handleMarkAsOffered}
+                    isMarking={markAsOfferedMutation.isPending}
+                  />
                 ))}
               </div>
             </div>
@@ -85,7 +107,14 @@ export function SmartMatchingModal({ buyer, open, onOpenChange }: SmartMatchingM
   );
 }
 
-function PropertyMatchCard({ property }: { property: MatchedProperty }) {
+interface PropertyMatchCardProps {
+  property: MatchedProperty;
+  isOffered: boolean;
+  onMarkAsOffered: (propertyId: string) => void;
+  isMarking: boolean;
+}
+
+function PropertyMatchCard({ property, isOffered, onMarkAsOffered, isMarking }: PropertyMatchCardProps) {
   const primaryImage = property.images.find((img) => img.is_primary) || property.images[0];
 
   const getScoreColor = (score: number) => {
@@ -116,6 +145,13 @@ function PropertyMatchCard({ property }: { property: MatchedProperty }) {
             {property.matchScore}%
           </div>
         </div>
+
+        {/* Already offered badge */}
+        {isOffered && (
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-blue-500 text-white">הוצע</Badge>
+          </div>
+        )}
       </div>
 
       <CardContent className="p-4">
@@ -140,14 +176,23 @@ function PropertyMatchCard({ property }: { property: MatchedProperty }) {
           <span className="text-lg font-bold text-primary">
             {formatPrice(property.price)}
           </span>
-          <div className="flex flex-wrap gap-1 max-w-[150px]">
-            {property.matchReasons.slice(0, 2).map((reason, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs flex items-center gap-1">
-                <Check className="h-2.5 w-2.5" />
-                {reason}
-              </Badge>
-            ))}
-          </div>
+          {isOffered ? (
+            <Badge variant="secondary" className="text-xs flex items-center gap-1">
+              <Check className="h-2.5 w-2.5" />
+              הוצע
+            </Badge>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 text-xs"
+              onClick={() => onMarkAsOffered(property.id)}
+              disabled={isMarking}
+            >
+              <Send className="h-3 w-3" />
+              סמן כהוצע
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

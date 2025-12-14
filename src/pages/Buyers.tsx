@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles } from "lucide-react";
+import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useBuyers, BuyerData } from "@/hooks/useBuyers";
+import { useDeleteBuyer } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,13 +21,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SmartMatchingModal } from "@/components/buyers/SmartMatchingModal";
+import { BuyerDetailsDrawer } from "@/components/buyers/BuyerDetailsDrawer";
+import { toast } from "@/hooks/use-toast";
 
 export default function Buyers() {
   const { data: buyers = [], isLoading, error } = useBuyers();
+  const deleteBuyerMutation = useDeleteBuyer();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBuyer, setSelectedBuyer] = useState<BuyerData | null>(null);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
+  const [buyerToDelete, setBuyerToDelete] = useState<BuyerData | null>(null);
 
   const filteredBuyers = buyers.filter(
     (buyer) =>
@@ -34,9 +50,32 @@ export default function Buyers() {
       (buyer.phone?.includes(searchQuery) ?? false)
   );
 
-  const handleSmartMatch = (buyer: BuyerData) => {
+  const handleSmartMatch = (buyer: BuyerData, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setSelectedBuyer(buyer);
     setMatchingModalOpen(true);
+  };
+
+  const handleRowClick = (buyer: BuyerData) => {
+    setSelectedBuyer(buyer);
+    setDetailsDrawerOpen(true);
+  };
+
+  const handleDeleteClick = (buyer: BuyerData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setBuyerToDelete(buyer);
+  };
+
+  const confirmDelete = async () => {
+    if (!buyerToDelete) return;
+    try {
+      await deleteBuyerMutation.mutateAsync(buyerToDelete.id);
+      toast({ title: "הקונה נמחק בהצלחה" });
+    } catch (error) {
+      toast({ title: "שגיאה במחיקת הקונה", variant: "destructive" });
+    } finally {
+      setBuyerToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -101,12 +140,17 @@ export default function Buyers() {
                 <TableHead className="text-right font-semibold">אזורים</TableHead>
                 <TableHead className="text-right font-semibold">חדרים</TableHead>
                 <TableHead className="text-right font-semibold">התאמה חכמה</TableHead>
+                <TableHead className="text-right font-semibold w-12">מחיקה</TableHead>
                 <TableHead className="text-right font-semibold w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredBuyers.map((buyer) => (
-                <TableRow key={buyer.id} className="hover:bg-muted/30 transition-colors">
+                <TableRow 
+                  key={buyer.id} 
+                  className="hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => handleRowClick(buyer)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -165,16 +209,26 @@ export default function Buyers() {
                       variant="outline"
                       size="sm"
                       className="gap-2 text-accent hover:text-accent hover:bg-accent/10 border-accent/30"
-                      onClick={() => handleSmartMatch(buyer)}
+                      onClick={(e) => handleSmartMatch(buyer, e)}
                     >
                       <Sparkles className="h-4 w-4" />
                       התאמה חכמה
                     </Button>
                   </TableCell>
                   <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => handleDeleteClick(buyer, e)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                  <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -207,6 +261,31 @@ export default function Buyers() {
         open={matchingModalOpen}
         onOpenChange={setMatchingModalOpen}
       />
+
+      {/* Buyer Details Drawer */}
+      <BuyerDetailsDrawer
+        buyer={selectedBuyer}
+        open={detailsDrawerOpen}
+        onOpenChange={setDetailsDrawerOpen}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!buyerToDelete} onOpenChange={(open) => !open && setBuyerToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription>
+              פעולה זו תמחק את הקונה "{buyerToDelete?.full_name}" לצמיתות. לא ניתן לבטל פעולה זו.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              מחק
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
