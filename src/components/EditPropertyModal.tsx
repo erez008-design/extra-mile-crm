@@ -31,6 +31,14 @@ const AIR_DIRECTION_OPTIONS = [
   { value: "west", label: "מערב" },
 ];
 
+const PARKING_TYPE_OPTIONS = [
+  { value: "regular", label: "רגילה" },
+  { value: "underground", label: "תת קרקעית" },
+  { value: "covered", label: "מקורה" },
+  { value: "tandem", label: "עוקבת (טורית)" },
+  { value: "stacker", label: "מכפיל חניה" },
+];
+
 export function EditPropertyModal({ property, open, onOpenChange, onSaved }: EditPropertyModalProps) {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -50,11 +58,20 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     has_safe_room: false,
     has_sun_balcony: false,
     description: "",
+    // Extended details
+    balcony_size: "",
+    parking_type: "",
+    has_storage: false,
+    bathrooms: "",
+    toilets: "",
   });
 
   useEffect(() => {
     if (property && open) {
-      setFormData({
+      // Fetch extended details when modal opens
+      fetchExtendedDetails();
+      setFormData(prev => ({
+        ...prev,
         address: property.address || "",
         city: property.city || "",
         price: property.price?.toString() || "",
@@ -71,15 +88,36 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_safe_room: property.has_safe_room || false,
         has_sun_balcony: property.has_sun_balcony || false,
         description: property.description || "",
-      });
+      }));
     }
   }, [property, open]);
+
+  const fetchExtendedDetails = async () => {
+    if (!property?.id) return;
+    const { data } = await supabase
+      .from("property_extended_details")
+      .select("*")
+      .eq("property_id", property.id)
+      .maybeSingle();
+    
+    if (data) {
+      setFormData(prev => ({
+        ...prev,
+        balcony_size: data.balcony_size_sqm?.toString() || "",
+        parking_type: data.parking_type || "",
+        has_storage: data.has_storage || false,
+        bathrooms: data.bathrooms?.toString() || "",
+        toilets: data.toilets?.toString() || "",
+      }));
+    }
+  };
 
   const handleSave = async () => {
     if (!property?.id) return;
     
     setSaving(true);
     try {
+      // Update main properties table
       const updateData = {
         address: formData.address,
         city: formData.city,
@@ -105,6 +143,22 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         .eq("id", property.id);
 
       if (error) throw error;
+
+      // Upsert extended details
+      const extendedData = {
+        property_id: property.id,
+        balcony_size_sqm: formData.balcony_size ? parseFloat(formData.balcony_size) : null,
+        parking_type: formData.parking_type || null,
+        has_storage: formData.has_storage,
+        bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+        toilets: formData.toilets ? parseInt(formData.toilets) : null,
+      };
+
+      const { error: extError } = await supabase
+        .from("property_extended_details")
+        .upsert(extendedData, { onConflict: "property_id" });
+
+      if (extError) throw extError;
 
       toast.success("הנכס עודכן בהצלחה");
       onSaved();
@@ -252,6 +306,66 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Extended Details */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">פרטים נוספים</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-balcony-size">גודל מרפסת במ״ר</Label>
+                <Input
+                  id="edit-balcony-size"
+                  type="number"
+                  value={formData.balcony_size}
+                  onChange={(e) => setFormData({ ...formData, balcony_size: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-parking-type">סוג חניה</Label>
+                <Select
+                  value={formData.parking_type}
+                  onValueChange={(value) => setFormData({ ...formData, parking_type: value })}
+                >
+                  <SelectTrigger id="edit-parking-type">
+                    <SelectValue placeholder="בחר סוג" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PARKING_TYPE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-bathrooms">חדרי רחצה</Label>
+                <Input
+                  id="edit-bathrooms"
+                  type="number"
+                  value={formData.bathrooms}
+                  onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-toilets">שירותים</Label>
+                <Input
+                  id="edit-toilets"
+                  type="number"
+                  value={formData.toilets}
+                  onChange={(e) => setFormData({ ...formData, toilets: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse col-span-2">
+                <Checkbox
+                  id="edit-storage"
+                  checked={formData.has_storage}
+                  onCheckedChange={(checked) => setFormData({ ...formData, has_storage: checked as boolean })}
+                />
+                <Label htmlFor="edit-storage" className="cursor-pointer">מחסן</Label>
               </div>
             </div>
           </div>
