@@ -45,7 +45,7 @@ interface ExtendedDetailsRow {
   bathrooms: number | null;
   toilets: number | null;
   building_year: number | null;
-  air_directions: string | null;
+  air_directions: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -141,13 +141,29 @@ const CompareProperties = () => {
   const getParkingTypeLabel = (type: string | null | undefined) => {
     if (!type) return "";
     const labels: Record<string, string> = {
-      regular: "רגילה",
-      underground: "תת קרקעית",
+      tabu: "רשומה בטאבו",
+      shared: "חניה משותפת",
       covered: "מקורה",
-      tandem: "עוקבת",
-      stacker: "מכפיל",
+      open: "פתוחה",
+      tandem: "עוקבת (טורית)",
+      double: "כפולה / מכפיל",
     };
     return labels[type] || type;
+  };
+
+  const getAirDirectionsDisplay = (directions: string[] | null) => {
+    if (!directions || directions.length === 0) return "—";
+    const labels: Record<string, string> = {
+      north: "צפון",
+      south: "דרום",
+      east: "מזרח",
+      west: "מערב",
+      northeast: "צפון-מזרח",
+      northwest: "צפון-מערב",
+      southeast: "דרום-מזרח",
+      southwest: "דרום-מערב",
+    };
+    return directions.map(d => labels[d] || d).join(", ");
   };
 
   const getValue = (item: ComparisonProperty, field: string): string => {
@@ -193,7 +209,7 @@ const CompareProperties = () => {
       case "building_year":
         return ext?.building_year != null ? `${ext.building_year}` : "—";
       case "air_directions":
-        return ext?.air_directions || "—";
+        return getAirDirectionsDisplay(ext?.air_directions || null);
       default:
         return "—";
     }

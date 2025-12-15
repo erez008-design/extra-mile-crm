@@ -426,7 +426,7 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
-          air_directions: string | null
+          air_directions: string[] | null
           build_year: number | null
           city: string
           created_at: string | null
@@ -452,7 +452,7 @@ export type Database = {
         Insert: {
           address: string
           agent_id?: string | null
-          air_directions?: string | null
+          air_directions?: string[] | null
           build_year?: number | null
           city: string
           created_at?: string | null
@@ -478,7 +478,7 @@ export type Database = {
         Update: {
           address?: string
           agent_id?: string | null
-          air_directions?: string | null
+          air_directions?: string[] | null
           build_year?: number | null
           city?: string
           created_at?: string | null
@@ -535,7 +535,7 @@ export type Database = {
       }
       property_extended_details: {
         Row: {
-          air_directions: string | null
+          air_directions: string[] | null
           balcony_size_sqm: number | null
           bathrooms: number | null
           building_year: number | null
@@ -556,7 +556,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          air_directions?: string | null
+          air_directions?: string[] | null
           balcony_size_sqm?: number | null
           bathrooms?: number | null
           building_year?: number | null
@@ -577,7 +577,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          air_directions?: string | null
+          air_directions?: string[] | null
           balcony_size_sqm?: number | null
           bathrooms?: number | null
           building_year?: number | null
@@ -601,7 +601,7 @@ export type Database = {
           {
             foreignKeyName: "property_extended_details_property_id_fkey"
             columns: ["property_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },

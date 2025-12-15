@@ -19,7 +19,7 @@ export interface PropertyData {
   rooms: number | null;
   floor: number | null;
   total_floors: number | null;
-  air_directions: string | null;
+  air_directions: string[] | null;
   renovation_status: string | null;
   build_year: number | null;
   has_elevator: boolean | null;

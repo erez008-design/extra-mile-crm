@@ -29,14 +29,19 @@ const AIR_DIRECTION_OPTIONS = [
   { value: "south", label: "דרום" },
   { value: "east", label: "מזרח" },
   { value: "west", label: "מערב" },
+  { value: "northeast", label: "צפון-מזרח" },
+  { value: "northwest", label: "צפון-מערב" },
+  { value: "southeast", label: "דרום-מזרח" },
+  { value: "southwest", label: "דרום-מערב" },
 ];
 
 const PARKING_TYPE_OPTIONS = [
-  { value: "regular", label: "רגילה" },
-  { value: "underground", label: "תת קרקעית" },
+  { value: "tabu", label: "רשומה בטאבו" },
+  { value: "shared", label: "חניה משותפת" },
   { value: "covered", label: "מקורה" },
+  { value: "open", label: "פתוחה" },
   { value: "tandem", label: "עוקבת (טורית)" },
-  { value: "stacker", label: "מכפיל חניה" },
+  { value: "double", label: "כפולה / מכפיל" },
 ];
 
 export function EditPropertyModal({ property, open, onOpenChange, onSaved }: EditPropertyModalProps) {
@@ -49,7 +54,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     rooms: "",
     floor: "",
     total_floors: "",
-    air_directions: "",
+    air_directions: [] as string[],
     renovation_status: "",
     build_year: "",
     parking_spots: "",
@@ -79,7 +84,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         rooms: property.rooms?.toString() || "",
         floor: property.floor?.toString() || "",
         total_floors: property.total_floors?.toString() || "",
-        air_directions: property.air_directions || "",
+        air_directions: property.air_directions || [],
         renovation_status: property.renovation_status || "",
         build_year: property.build_year?.toString() || "",
         parking_spots: property.parking_spots?.toString() || "",
@@ -126,7 +131,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         rooms: formData.rooms ? parseFloat(formData.rooms) : null,
         floor: formData.floor ? parseInt(formData.floor) : null,
         total_floors: formData.total_floors ? parseInt(formData.total_floors) : null,
-        air_directions: formData.air_directions || null,
+        air_directions: formData.air_directions.length > 0 ? formData.air_directions : null,
         renovation_status: formData.renovation_status || null,
         build_year: formData.build_year ? parseInt(formData.build_year) : null,
         parking_spots: formData.parking_spots ? parseInt(formData.parking_spots) : null,
@@ -289,23 +294,27 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-air">כיווני אוויר</Label>
-                <Select
-                  value={formData.air_directions}
-                  onValueChange={(value) => setFormData({ ...formData, air_directions: value })}
-                >
-                  <SelectTrigger id="edit-air">
-                    <SelectValue placeholder="בחר כיוון" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AIR_DIRECTION_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 col-span-2">
+                <Label>כיווני אוויר</Label>
+                <div className="flex flex-wrap gap-3">
+                  {AIR_DIRECTION_OPTIONS.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.air_directions.includes(opt.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, air_directions: [...formData.air_directions, opt.value] });
+                          } else {
+                            setFormData({ ...formData, air_directions: formData.air_directions.filter(d => d !== opt.value) });
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-input"
+                      />
+                      <span className="text-sm">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
