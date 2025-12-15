@@ -65,7 +65,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     description: "",
     // Extended details
     balcony_size: "",
-    parking_type: "",
+    parking_type: [] as string[],
     has_storage: false,
     bathrooms: "",
     toilets: "",
@@ -109,7 +109,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
       setFormData(prev => ({
         ...prev,
         balcony_size: data.balcony_size_sqm?.toString() || "",
-        parking_type: data.parking_type || "",
+        parking_type: Array.isArray(data.parking_type) ? data.parking_type : (data.parking_type ? [data.parking_type] : []),
         has_storage: data.has_storage || false,
         bathrooms: data.bathrooms?.toString() || "",
         toilets: data.toilets?.toString() || "",
@@ -153,7 +153,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
       const extendedData = {
         property_id: property.id,
         balcony_size_sqm: formData.balcony_size ? parseFloat(formData.balcony_size) : null,
-        parking_type: formData.parking_type || null,
+        parking_type: formData.parking_type.length > 0 ? formData.parking_type : null,
         has_storage: formData.has_storage,
         bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
         toilets: formData.toilets ? parseInt(formData.toilets) : null,
@@ -332,23 +332,27 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   onChange={(e) => setFormData({ ...formData, balcony_size: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-parking-type">סוג חניה</Label>
-                <Select
-                  value={formData.parking_type}
-                  onValueChange={(value) => setFormData({ ...formData, parking_type: value })}
-                >
-                  <SelectTrigger id="edit-parking-type">
-                    <SelectValue placeholder="בחר סוג" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PARKING_TYPE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 col-span-2">
+                <Label>סוג חניה</Label>
+                <div className="flex flex-wrap gap-3">
+                  {PARKING_TYPE_OPTIONS.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.parking_type.includes(opt.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, parking_type: [...formData.parking_type, opt.value] });
+                          } else {
+                            setFormData({ ...formData, parking_type: formData.parking_type.filter(t => t !== opt.value) });
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-input"
+                      />
+                      <span className="text-sm">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-bathrooms">חדרי רחצה</Label>

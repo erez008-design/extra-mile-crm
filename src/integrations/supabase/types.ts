@@ -547,7 +547,7 @@ export type Database = {
           id: string
           parking_count: number | null
           parking_covered: boolean | null
-          parking_type: string | null
+          parking_type: string[] | null
           property_id: string | null
           renovation_level: string | null
           storage_size_sqm: number | null
@@ -568,7 +568,7 @@ export type Database = {
           id?: string
           parking_count?: number | null
           parking_covered?: boolean | null
-          parking_type?: string | null
+          parking_type?: string[] | null
           property_id?: string | null
           renovation_level?: string | null
           storage_size_sqm?: number | null
@@ -589,7 +589,7 @@ export type Database = {
           id?: string
           parking_count?: number | null
           parking_covered?: boolean | null
-          parking_type?: string | null
+          parking_type?: string[] | null
           property_id?: string | null
           renovation_level?: string | null
           storage_size_sqm?: number | null

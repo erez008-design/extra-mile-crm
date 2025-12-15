@@ -11,7 +11,7 @@ export interface PropertyExtendedDetails {
   elevators_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
-  parking_type: string | null;
+  parking_type: string[] | null;
   has_storage: boolean | null;
   storage_size_sqm: number | null;
   balcony_size_sqm: number | null;
@@ -32,7 +32,7 @@ export interface PropertyExtendedDetailsInsert {
   elevators_count?: number | null;
   parking_count?: number | null;
   parking_covered?: boolean | null;
-  parking_type?: string | null;
+  parking_type?: string[] | null;
   has_storage?: boolean | null;
   storage_size_sqm?: number | null;
   balcony_size_sqm?: number | null;

@@ -37,7 +37,7 @@ interface ExtendedDetailsRow {
   elevators_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
-  parking_type: string | null;
+  parking_type: string[] | null;
   has_storage: boolean | null;
   storage_size_sqm: number | null;
   balcony_size_sqm: number | null;
@@ -138,8 +138,8 @@ const CompareProperties = () => {
     return labels[level] || level;
   };
 
-  const getParkingTypeLabel = (type: string | null | undefined) => {
-    if (!type) return "";
+  const getParkingTypeDisplay = (types: string[] | null | undefined) => {
+    if (!types || types.length === 0) return "";
     const labels: Record<string, string> = {
       tabu: "רשומה בטאבו",
       shared: "חניה משותפת",
@@ -148,7 +148,7 @@ const CompareProperties = () => {
       tandem: "עוקבת (טורית)",
       double: "כפולה / מכפיל",
     };
-    return labels[type] || type;
+    return types.map(t => labels[t] || t).join(", ");
   };
 
   const getAirDirectionsDisplay = (directions: string[] | null) => {
@@ -189,9 +189,9 @@ const CompareProperties = () => {
       case "parking":
         // Show parking count from properties table and type from extended details
         const count = prop.parking_spots ?? ext?.parking_count ?? 0;
-        const typeLabel = getParkingTypeLabel(ext?.parking_type);
-        if (count === 0 && !typeLabel) return "אין";
-        return typeLabel ? `${count} (${typeLabel})` : `${count}`;
+        const typeDisplay = getParkingTypeDisplay(ext?.parking_type);
+        if (count === 0 && !typeDisplay) return "אין";
+        return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
       case "storage":
         if (!ext) return "—";
         if (!ext.has_storage) return "אין";
