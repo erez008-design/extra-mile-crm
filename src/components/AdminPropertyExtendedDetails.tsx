@@ -245,15 +245,37 @@ export function AdminPropertyExtendedDetails() {
                         disabled={!formData.has_elevator}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="air_directions">כיווני אוויר</Label>
-                      <Input
-                        id="air_directions"
-                        type="text"
-                        value={formData.air_directions ?? ""}
-                        onChange={(e) => updateField("air_directions", e.target.value || null)}
-                        placeholder="צפון, דרום, מזרח"
-                      />
+                    <div className="space-y-2 col-span-2">
+                      <Label>כיווני אוויר</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "north", label: "צפון" },
+                          { value: "south", label: "דרום" },
+                          { value: "east", label: "מזרח" },
+                          { value: "west", label: "מערב" },
+                          { value: "northeast", label: "צפון-מזרח" },
+                          { value: "northwest", label: "צפון-מערב" },
+                          { value: "southeast", label: "דרום-מזרח" },
+                          { value: "southwest", label: "דרום-מערב" },
+                        ].map((opt) => (
+                          <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(formData.air_directions || []).includes(opt.value)}
+                              onChange={(e) => {
+                                const current = formData.air_directions || [];
+                                if (e.target.checked) {
+                                  updateField("air_directions", [...current, opt.value]);
+                                } else {
+                                  updateField("air_directions", current.filter(d => d !== opt.value));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-input"
+                            />
+                            <span className="text-sm">{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </CardContent>

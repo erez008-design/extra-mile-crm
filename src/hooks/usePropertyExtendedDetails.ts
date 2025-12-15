@@ -11,6 +11,7 @@ export interface PropertyExtendedDetails {
   elevators_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
+  parking_type: string | null;
   has_storage: boolean | null;
   storage_size_sqm: number | null;
   balcony_size_sqm: number | null;
@@ -18,7 +19,7 @@ export interface PropertyExtendedDetails {
   bathrooms: number | null;
   toilets: number | null;
   building_year: number | null;
-  air_directions: string | null;
+  air_directions: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ export interface PropertyExtendedDetailsInsert {
   elevators_count?: number | null;
   parking_count?: number | null;
   parking_covered?: boolean | null;
+  parking_type?: string | null;
   has_storage?: boolean | null;
   storage_size_sqm?: number | null;
   balcony_size_sqm?: number | null;
@@ -38,7 +40,7 @@ export interface PropertyExtendedDetailsInsert {
   bathrooms?: number | null;
   toilets?: number | null;
   building_year?: number | null;
-  air_directions?: string | null;
+  air_directions?: string[] | null;
 }
 
 // Hook to get extended property details by property_id
