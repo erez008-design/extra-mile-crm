@@ -204,7 +204,6 @@ serve(async (req) => {
       } else {
         // New property - generate a new UUID
         propertyData.id = crypto.randomUUID()
-        propertyData.created_by = null
       }
 
       // Check if we already have this property (deduplicate by address+city)
