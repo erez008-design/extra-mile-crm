@@ -202,7 +202,8 @@ serve(async (req) => {
         // Update existing property - preserve ID and don't touch enrichment fields
         propertyData.id = existingId
       } else {
-        // New property
+        // New property - generate a new UUID
+        propertyData.id = crypto.randomUUID()
         propertyData.created_by = null
       }
 
