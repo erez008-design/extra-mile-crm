@@ -288,23 +288,25 @@ const CompareProperties = () => {
       </header>
 
       <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {/* Property Headers - Horizontal Scrollable */}
+        {/* Property Headers - Compact Horizontal Row */}
         <div className="overflow-x-auto pb-4 -mx-2 px-2 sm:mx-0 sm:px-0">
-          <div className="grid gap-2 sm:gap-4 mb-4 sm:mb-6 min-w-max" style={{ gridTemplateColumns: `120px sm:160px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}>
-            <div className="font-semibold text-muted-foreground text-sm sticky right-0 bg-background z-10 py-2">פרמטר</div>
+          <div 
+            className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 min-w-max items-stretch"
+            style={{ paddingRight: '120px' }}
+          >
             {comparisonData.map((item) => {
               const prop = item.buyerProperty.properties;
               const mainImage = prop.property_images?.find(i => i.is_primary)?.url || prop.property_images?.[0]?.url;
               return (
-                <Card key={item.buyerProperty.id} className="overflow-hidden min-w-[140px]">
+                <div key={item.buyerProperty.id} className="flex items-center gap-2 bg-card rounded-lg border p-2 min-w-[140px] max-w-[180px]">
                   {mainImage && (
-                    <img src={mainImage} alt={prop.address} className="w-full h-24 sm:h-32 object-cover" />
+                    <img src={mainImage} alt={prop.address} className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0" />
                   )}
-                  <CardContent className="p-2 sm:p-3">
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-xs sm:text-sm truncate">{prop.address}</h3>
-                    <p className="text-xs text-muted-foreground">{prop.city}</p>
-                  </CardContent>
-                </Card>
+                    <p className="text-xs text-muted-foreground truncate">{prop.city}</p>
+                  </div>
+                </div>
               );
             })}
           </div>

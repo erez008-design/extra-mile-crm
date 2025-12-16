@@ -2,6 +2,7 @@ import { Building2, MapPin, Maximize, Phone, User, Calendar, Sparkles } from "lu
 import { BuyerData } from "@/hooks/useBuyers";
 import { useOfferedProperties } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
+import { safeDateDisplay } from "@/lib/safeDate";
 import {
   Sheet,
   SheetContent,
@@ -155,7 +156,7 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">נוצר בתאריך</h4>
                     <p className="flex items-center gap-1 text-sm text-foreground">
                       <Calendar className="h-3 w-3" />
-                      {format(new Date(buyer.created_at), "dd/MM/yyyy")}
+                      {safeDateDisplay(buyer.created_at, (d) => format(d, "dd/MM/yyyy"))}
                     </p>
                   </div>
                 )}

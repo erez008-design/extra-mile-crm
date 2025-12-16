@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRealtimeMatches } from "@/hooks/useRealtimeMatches";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { safeDateDisplay } from "@/lib/safeDate";
 interface Buyer {
   id: string;
   full_name: string;
@@ -1477,7 +1478,7 @@ export const BuyerManagement = () => {
                         מזהה: {msg.buyer_id.slice(0, 8)}...
                       </p>
                     </div>
-                    <Badge variant="secondary">{new Date(msg.created_at).toLocaleDateString("he-IL")}</Badge>
+                    <Badge variant="secondary">{safeDateDisplay(msg.created_at, (d) => d.toLocaleDateString("he-IL"))}</Badge>
                   </div>
                   <p className="text-sm bg-muted p-3 rounded">{msg.message}</p>
                 </div>
