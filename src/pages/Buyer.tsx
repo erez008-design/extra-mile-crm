@@ -18,6 +18,7 @@ import { MortgageCalculator } from "@/components/MortgageCalculator";
 import { ROICalculator } from "@/components/ROICalculator";
 import { TransactionCostCalculator } from "@/components/TransactionCostCalculator";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
+import { safeDateDisplay } from "@/lib/safeDate";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 
 interface Buyer {
@@ -503,7 +504,7 @@ const Buyer = () => {
           {buyerProperty.visited_at && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
               <Calendar className="w-4 h-4" />
-              <span>נראה בתאריך: {format(new Date(buyerProperty.visited_at), "d MMMM yyyy", { locale: he })}</span>
+              <span>נראה בתאריך: {safeDateDisplay(buyerProperty.visited_at, (d) => format(d, "d MMMM yyyy", { locale: he }))}</span>
             </div>
           )}
 
@@ -748,16 +749,19 @@ const Buyer = () => {
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="all">הכל ({buyerProperties.length})</TabsTrigger>
-            <TabsTrigger value="offered">הוצעו ({grouped.offered.length})</TabsTrigger>
-            <TabsTrigger value="seen">נראה ({grouped.seen.length})</TabsTrigger>
-            <TabsTrigger value="interested">אהבתי ({grouped.interested.length})</TabsTrigger>
-            <TabsTrigger value="not_interested">לא מעוניין ({grouped.not_interested.length})</TabsTrigger>
-            <TabsTrigger value="tools">
-              <Wrench className="w-4 h-4" />
-            </TabsTrigger>
-          </TabsList>
+          {/* Horizontally scrollable tabs for mobile */}
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-6 gap-1 h-auto flex-nowrap">
+              <TabsTrigger value="all" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">הכל ({buyerProperties.length})</TabsTrigger>
+              <TabsTrigger value="offered" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">הוצעו ({grouped.offered.length})</TabsTrigger>
+              <TabsTrigger value="seen" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">נראה ({grouped.seen.length})</TabsTrigger>
+              <TabsTrigger value="interested" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">אהבתי ({grouped.interested.length})</TabsTrigger>
+              <TabsTrigger value="not_interested" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">לא מעוניין ({grouped.not_interested.length})</TabsTrigger>
+              <TabsTrigger value="tools" className="flex-shrink-0 px-3 py-2">
+                <Wrench className="w-4 h-4" />
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="all" className="space-y-4 mt-4">
             {buyerProperties.length === 0 ? (

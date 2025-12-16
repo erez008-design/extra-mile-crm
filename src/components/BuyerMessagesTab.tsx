@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+import { safeDateDisplay } from "@/lib/safeDate";
 
 interface BuyerMessage {
   id: string;
@@ -84,7 +85,7 @@ export const BuyerMessagesTab = () => {
                 <p className="text-sm text-muted-foreground">מזהה: {message.buyer_id.slice(0, 8)}...</p>
               </div>
               <Badge variant="secondary">
-                {format(new Date(message.created_at), "d MMMM yyyy, HH:mm", { locale: he })}
+                {safeDateDisplay(message.created_at, (d) => format(d, "d MMMM yyyy, HH:mm", { locale: he }))}
               </Badge>
             </div>
             

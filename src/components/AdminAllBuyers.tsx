@@ -26,6 +26,7 @@ import { Users, ExternalLink, Filter, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { toast } from "sonner";
+import { safeDateDisplay } from "@/lib/safeDate";
 
 interface BuyerWithStats {
   id: string;
@@ -378,9 +379,7 @@ export const AdminAllBuyers = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {format(new Date(buyer.created_at), "dd/MM/yyyy", {
-                              locale: he,
-                            })}
+                            {safeDateDisplay(buyer.created_at, (d) => format(d, "dd/MM/yyyy", { locale: he }))}
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge variant={status.variant}>{status.label}</Badge>
@@ -429,9 +428,7 @@ export const AdminAllBuyers = () => {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(buyer.created_at), "dd/MM/yyyy", {
-                            locale: he,
-                          })}
+                          {safeDateDisplay(buyer.created_at, (d) => format(d, "dd/MM/yyyy", { locale: he }))}
                         </span>
                         <Button
                           variant="outline"
