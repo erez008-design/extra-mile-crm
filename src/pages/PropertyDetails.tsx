@@ -23,6 +23,13 @@ import {
   Building2,
   Upload,
   Trash2,
+  Wind,
+  Bath,
+  DoorOpen,
+  Users,
+  Calendar,
+  Package,
+  Wrench,
 } from "lucide-react";
 
 interface Property {
@@ -33,18 +40,78 @@ interface Property {
   size_sqm: number | null;
   rooms: number | null;
   floor: number | null;
+  total_floors: number | null;
   description: string | null;
   has_sun_balcony: boolean | null;
+  has_balcony: boolean | null;
   parking_spots: number | null;
   has_safe_room: boolean | null;
+  has_elevator: boolean | null;
+  build_year: number | null;
+  renovation_status: string | null;
+  air_directions: string[] | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
   property_documents?: Array<{ id: string; title: string; url: string }>;
 }
+
+interface ExtendedDetails {
+  elevators_count: number | null;
+  tenants_count: number | null;
+  parking_count: number | null;
+  parking_type: string[] | null;
+  has_storage: boolean | null;
+  storage_size_sqm: number | null;
+  balcony_size_sqm: number | null;
+  bathrooms: number | null;
+  toilets: number | null;
+  air_directions: string[] | null;
+}
+
+// Helper functions for display formatting
+const getRenovationLabel = (status: string | null | undefined) => {
+  if (!status) return null;
+  const labels: Record<string, string> = {
+    new: "חדש מקבלן",
+    renovated: "משופץ",
+    good: "במצב טוב",
+    needs_renovation: "דורש שיפוץ",
+  };
+  return labels[status] || status;
+};
+
+const getParkingTypeDisplay = (types: string[] | null | undefined) => {
+  if (!types || types.length === 0) return "";
+  const labels: Record<string, string> = {
+    tabu: "רשומה בטאבו",
+    shared: "חניה משותפת",
+    covered: "מקורה",
+    open: "פתוחה",
+    tandem: "עוקבת (טורית)",
+    double: "כפולה / מכפיל",
+  };
+  return types.map(t => labels[t] || t).join(", ");
+};
+
+const getAirDirectionsDisplay = (directions: string[] | null) => {
+  if (!directions || directions.length === 0) return null;
+  const labels: Record<string, string> = {
+    north: "צפון",
+    south: "דרום",
+    east: "מזרח",
+    west: "מערב",
+    northeast: "צפון-מזרח",
+    northwest: "צפון-מערב",
+    southeast: "דרום-מזרח",
+    southwest: "דרום-מערב",
+  };
+  return directions.map(d => labels[d] || d).join(", ");
+};
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState<Property | null>(null);
+  const [extendedDetails, setExtendedDetails] = useState<ExtendedDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
   const [rating, setRating] = useState(0);
@@ -77,6 +144,7 @@ const PropertyDetails = () => {
     setIsAdmin(roles.includes("admin") || roles.includes("agent"));
 
     fetchProperty();
+    fetchExtendedDetails();
     fetchNoteAndRating();
   };
 
@@ -99,10 +167,33 @@ const PropertyDetails = () => {
       toast.error("שגיאה בטעינת הנכס");
       console.error(error);
     } else {
-      setProperty(data);
+      // Fetch documents separately
+      const { data: docs } = await supabase
+        .from("property_documents")
+        .select("id, title, url")
+        .eq("property_id", id!);
+      
+      setProperty({
+        ...data,
+        property_documents: docs || [],
+      });
     }
 
     setLoading(false);
+  };
+
+  const fetchExtendedDetails = async () => {
+    if (!id) return;
+    
+    const { data } = await supabase
+      .from("property_extended_details")
+      .select("*")
+      .eq("property_id", id)
+      .maybeSingle();
+    
+    if (data) {
+      setExtendedDetails(data);
+    }
   };
 
   const fetchNoteAndRating = async () => {
@@ -477,77 +568,200 @@ const PropertyDetails = () => {
 
           {/* Sidebar - Property Details Grid */}
           <div className="space-y-6">
-            {/* Property Details in Grid */}
+            {/* Basic Property Details */}
             <Card>
-              <CardContent className="p-4 md:p-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3 md:gap-4">
-                  {/* Property Type */}
-                  <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                    <Home className="w-8 h-8 mb-2 text-primary" />
-                    <div className="text-xs text-muted-foreground mb-1">סוג הנכס</div>
-                    <div className="font-semibold text-primary">דירה</div>
-                  </div>
-
-                  {/* Transaction Type */}
-                  <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                    <Building2 className="w-8 h-8 mb-2 text-primary" />
-                    <div className="text-xs text-muted-foreground mb-1">סוג העסקה</div>
-                    <div className="font-semibold text-primary">מכירה</div>
-                  </div>
-
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Home className="w-5 h-5 text-primary" />
+                  פרטים בסיסיים
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="grid grid-cols-2 gap-3">
                   {/* Size */}
                   {property.size_sqm && (
-                    <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                      <Maximize className="w-8 h-8 mb-2 text-primary" />
-                      <div className="text-xs text-muted-foreground mb-1">שטח הנכס</div>
-                      <div className="font-semibold text-primary">{property.size_sqm} מ״ר</div>
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                      <Maximize className="w-6 h-6 mb-1 text-primary" />
+                      <div className="text-xs text-muted-foreground">שטח</div>
+                      <div className="font-semibold text-primary text-sm">{property.size_sqm} מ״ר</div>
+                    </div>
+                  )}
+
+                  {/* Rooms */}
+                  {property.rooms && (
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                      <DoorOpen className="w-6 h-6 mb-1 text-primary" />
+                      <div className="text-xs text-muted-foreground">חדרים</div>
+                      <div className="font-semibold text-primary text-sm">{property.rooms} חד׳</div>
                     </div>
                   )}
 
                   {/* Floor */}
-                  {property.floor !== null && (
-                    <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                      <Layers className="w-8 h-8 mb-2 text-primary" />
-                      <div className="text-xs text-muted-foreground mb-1">קומה</div>
-                      <div className="font-semibold text-primary">{property.floor}</div>
-                    </div>
-                  )}
-
-                  {/* Parking */}
-                  <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                    <Car className="w-8 h-8 mb-2 text-primary" />
-                    <div className="text-xs text-muted-foreground mb-1">חניה</div>
-                    <div className="font-semibold text-primary">
-                      {property.parking_spots && property.parking_spots > 0 ? 'יש' : 'אין'}
+                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                    <Layers className="w-6 h-6 mb-1 text-primary" />
+                    <div className="text-xs text-muted-foreground">קומה</div>
+                    <div className="font-semibold text-primary text-sm">
+                      {property.floor != null && property.total_floors != null 
+                        ? `${property.floor} מתוך ${property.total_floors}`
+                        : property.floor != null 
+                          ? property.floor 
+                          : "—"}
                     </div>
                   </div>
 
-                  {/* Rooms */}
-                  {property.rooms && (
-                    <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                      <Home className="w-8 h-8 mb-2 text-primary" />
-                      <div className="text-xs text-muted-foreground mb-1">מספר חדרים</div>
-                      <div className="font-semibold text-primary">{property.rooms} חד׳</div>
+                  {/* Parking - Detailed */}
+                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                    <Car className="w-6 h-6 mb-1 text-primary" />
+                    <div className="text-xs text-muted-foreground">חניה</div>
+                    <div className="font-semibold text-primary text-sm text-center">
+                      {(() => {
+                        const count = property.parking_spots ?? extendedDetails?.parking_count ?? 0;
+                        const typeDisplay = getParkingTypeDisplay(extendedDetails?.parking_type);
+                        if (count === 0 && !typeDisplay) return "אין";
+                        return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Building Info */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  מידע על הבניין
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="space-y-3">
+                  {/* Building Year */}
+                  {property.build_year && (
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">שנת בנייה</span>
+                      </div>
+                      <span className="font-semibold text-primary">{property.build_year}</span>
                     </div>
                   )}
 
+                  {/* Elevators */}
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">מעליות</span>
+                    </div>
+                    <span className="font-semibold text-primary">
+                      {property.has_elevator 
+                        ? extendedDetails?.elevators_count 
+                          ? `יש (${extendedDetails.elevators_count})`
+                          : "יש"
+                        : "אין"}
+                    </span>
+                  </div>
+
+                  {/* Tenants Count */}
+                  {extendedDetails?.tenants_count != null && (
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">דיירים בבניין</span>
+                      </div>
+                      <span className="font-semibold text-primary">{extendedDetails.tenants_count}</span>
+                    </div>
+                  )}
+
+                  {/* Renovation Status */}
+                  {getRenovationLabel(property.renovation_status) && (
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Wrench className="w-5 h-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">מצב הנכס</span>
+                      </div>
+                      <span className="font-semibold text-primary">{getRenovationLabel(property.renovation_status)}</span>
+                    </div>
+                  )}
+
+                  {/* Air Directions */}
+                  {getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null) && (
+                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Wind className="w-5 h-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">כיווני אוויר</span>
+                      </div>
+                      <span className="font-semibold text-primary text-sm">
+                        {getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Features */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="w-5 h-5 text-primary" />
+                  מאפיינים נוספים
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="grid grid-cols-2 gap-3">
                   {/* Safe Room */}
-                  <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                    <Shield className="w-8 h-8 mb-2 text-primary" />
-                    <div className="text-xs text-muted-foreground mb-1">ממ״ד</div>
-                    <div className="font-semibold text-primary">
+                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                    <Shield className="w-6 h-6 mb-1 text-primary" />
+                    <div className="text-xs text-muted-foreground">ממ״ד</div>
+                    <div className="font-semibold text-primary text-sm">
                       {property.has_safe_room ? 'יש' : 'אין'}
                     </div>
                   </div>
 
                   {/* Sun Balcony */}
-                  <div className="flex flex-col items-center p-4 bg-muted/30 rounded-lg">
-                    <Sun className="w-8 h-8 mb-2 text-primary" />
-                    <div className="text-xs text-muted-foreground mb-1">מרפסת</div>
-                    <div className="font-semibold text-primary">
-                      {property.has_sun_balcony ? 'יש' : 'אין'}
+                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                    <Sun className="w-6 h-6 mb-1 text-primary" />
+                    <div className="text-xs text-muted-foreground">מרפסת שמש</div>
+                    <div className="font-semibold text-primary text-sm">
+                      {property.has_sun_balcony 
+                        ? extendedDetails?.balcony_size_sqm 
+                          ? `יש (${extendedDetails.balcony_size_sqm} מ״ר)`
+                          : "יש"
+                        : "אין"}
                     </div>
                   </div>
+
+                  {/* Storage */}
+                  <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                    <Package className="w-6 h-6 mb-1 text-primary" />
+                    <div className="text-xs text-muted-foreground">מחסן</div>
+                    <div className="font-semibold text-primary text-sm">
+                      {extendedDetails?.has_storage 
+                        ? extendedDetails.storage_size_sqm 
+                          ? `יש (${extendedDetails.storage_size_sqm} מ״ר)`
+                          : "יש"
+                        : "אין"}
+                    </div>
+                  </div>
+
+                  {/* Bathrooms */}
+                  {extendedDetails?.bathrooms != null && (
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                      <Bath className="w-6 h-6 mb-1 text-primary" />
+                      <div className="text-xs text-muted-foreground">חדרי רחצה</div>
+                      <div className="font-semibold text-primary text-sm">{extendedDetails.bathrooms}</div>
+                    </div>
+                  )}
+
+                  {/* Toilets */}
+                  {extendedDetails?.toilets != null && (
+                    <div className="flex flex-col items-center p-3 bg-muted/30 rounded-lg">
+                      <DoorOpen className="w-6 h-6 mb-1 text-primary" />
+                      <div className="text-xs text-muted-foreground">שירותים</div>
+                      <div className="font-semibold text-primary text-sm">{extendedDetails.toilets}</div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
