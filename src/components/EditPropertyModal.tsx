@@ -69,6 +69,8 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     has_storage: false,
     bathrooms: "",
     toilets: "",
+    elevators_count: "",
+    tenants_count: "",
   });
 
   useEffect(() => {
@@ -113,6 +115,8 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_storage: data.has_storage || false,
         bathrooms: data.bathrooms?.toString() || "",
         toilets: data.toilets?.toString() || "",
+        elevators_count: data.elevators_count?.toString() || "",
+        tenants_count: data.tenants_count?.toString() || "",
       }));
     }
   };
@@ -157,6 +161,8 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_storage: formData.has_storage,
         bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
         toilets: formData.toilets ? parseInt(formData.toilets) : null,
+        elevators_count: formData.elevators_count ? parseInt(formData.elevators_count) : null,
+        tenants_count: formData.tenants_count ? parseInt(formData.tenants_count) : null,
       };
 
       const { error: extError } = await supabase
@@ -379,6 +385,28 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   onCheckedChange={(checked) => setFormData({ ...formData, has_storage: checked as boolean })}
                 />
                 <Label htmlFor="edit-storage" className="cursor-pointer">מחסן</Label>
+              </div>
+              {formData.has_elevator && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-elevators-count">מספר מעליות</Label>
+                  <Input
+                    id="edit-elevators-count"
+                    type="number"
+                    min="1"
+                    value={formData.elevators_count}
+                    onChange={(e) => setFormData({ ...formData, elevators_count: e.target.value })}
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="edit-tenants-count">מספר דיירים בבניין</Label>
+                <Input
+                  id="edit-tenants-count"
+                  type="number"
+                  min="0"
+                  value={formData.tenants_count}
+                  onChange={(e) => setFormData({ ...formData, tenants_count: e.target.value })}
+                />
               </div>
             </div>
           </div>

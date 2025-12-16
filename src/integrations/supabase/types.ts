@@ -551,6 +551,7 @@ export type Database = {
           property_id: string | null
           renovation_level: string | null
           storage_size_sqm: number | null
+          tenants_count: number | null
           toilets: number | null
           total_floors: number | null
           updated_at: string | null
@@ -572,6 +573,7 @@ export type Database = {
           property_id?: string | null
           renovation_level?: string | null
           storage_size_sqm?: number | null
+          tenants_count?: number | null
           toilets?: number | null
           total_floors?: number | null
           updated_at?: string | null
@@ -593,6 +595,7 @@ export type Database = {
           property_id?: string | null
           renovation_level?: string | null
           storage_size_sqm?: number | null
+          tenants_count?: number | null
           toilets?: number | null
           total_floors?: number | null
           updated_at?: string | null
