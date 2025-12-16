@@ -285,34 +285,34 @@ const CompareProperties = () => {
       </header>
 
       <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {/* Property Headers - Compact Horizontal Row */}
-        <div className="overflow-x-auto pb-4 -mx-2 px-2 sm:mx-0 sm:px-0">
-          <div 
-            className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 min-w-max items-stretch"
-            style={{ paddingRight: '120px' }}
-          >
-            {comparisonData.map((item) => {
-              const prop = item.buyerProperty.properties;
-              const mainImage = prop.property_images?.find(i => i.is_primary)?.url || prop.property_images?.[0]?.url;
-              return (
-                <div key={item.buyerProperty.id} className="flex items-center gap-2 bg-card rounded-lg border p-2 min-w-[140px] max-w-[180px]">
-                  {mainImage && (
-                    <img src={mainImage} alt={prop.address} className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-xs sm:text-sm truncate">{prop.address}</h3>
-                    <p className="text-xs text-muted-foreground truncate">{prop.city}</p>
+        {/* Unified Comparison Grid - Same columns for headers and data */}
+        <div className="overflow-x-auto md:overflow-visible -mx-2 px-2 md:mx-0 md:px-0">
+          <Card className="min-w-max md:min-w-0">
+            {/* Property Headers Row - Uses same grid as data rows */}
+            <div 
+              className="grid gap-2 sm:gap-4 p-3 sm:p-4 border-b bg-muted/30"
+              style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
+            >
+              <div className="font-medium text-muted-foreground text-xs sm:text-sm">נכס</div>
+              {comparisonData.map((item) => {
+                const prop = item.buyerProperty.properties;
+                const mainImage = prop.property_images?.find(i => i.is_primary)?.url || prop.property_images?.[0]?.url;
+                return (
+                  <div key={item.buyerProperty.id} className="flex items-center gap-2">
+                    {mainImage && (
+                      <img src={mainImage} alt={prop.address} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover flex-shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-xs sm:text-sm truncate">{prop.address}</h3>
+                      <p className="text-xs text-muted-foreground truncate">{prop.city}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                );
+              })}
+            </div>
 
-        {/* Comparison Table - Horizontal Scrollable with Sticky Label Column */}
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0">
-          <Card className="min-w-max">
-            <CardHeader className="py-3 sm:py-4">
+            {/* Basic Data Section */}
+            <CardHeader className="py-3 sm:py-4 border-b">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <Home className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 נתונים בסיסיים
@@ -324,9 +324,9 @@ const CompareProperties = () => {
                   <div 
                     key={field.key} 
                     className="grid gap-2 sm:gap-4 p-2 sm:p-3 hover:bg-muted/50"
-                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}
+                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
                   >
-                    <div className="font-medium text-muted-foreground text-xs sm:text-sm sticky right-0 bg-background py-1">{field.label}</div>
+                    <div className="font-medium text-muted-foreground text-xs sm:text-sm">{field.label}</div>
                     {comparisonData.map((item) => (
                       <div key={item.buyerProperty.id} className="font-semibold text-xs sm:text-sm">
                         {getValue(item, field.key)}
@@ -336,12 +336,9 @@ const CompareProperties = () => {
                 ))}
               </div>
             </CardContent>
-          </Card>
-        </div>
 
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 mt-4 sm:mt-6">
-          <Card className="min-w-max">
-            <CardHeader className="py-3 sm:py-4">
+            {/* Technical Data Section */}
+            <CardHeader className="py-3 sm:py-4 border-b border-t">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <Info className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 נתונים טכניים
@@ -353,9 +350,9 @@ const CompareProperties = () => {
                   <div 
                     key={field.key} 
                     className="grid gap-2 sm:gap-4 p-2 sm:p-3 hover:bg-muted/50"
-                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}
+                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
                   >
-                    <div className="font-medium text-muted-foreground text-xs sm:text-sm sticky right-0 bg-background py-1">{field.label}</div>
+                    <div className="font-medium text-muted-foreground text-xs sm:text-sm">{field.label}</div>
                     {comparisonData.map((item) => (
                       <div key={item.buyerProperty.id} className="text-xs sm:text-sm">
                         {getValue(item, field.key)}
@@ -368,9 +365,9 @@ const CompareProperties = () => {
           </Card>
         </div>
 
-        {/* Client Notes Section */}
-        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 mt-4 sm:mt-6">
-          <Card className="min-w-max">
+        {/* Client Notes Section - Separate Card */}
+        <div className="overflow-x-auto md:overflow-visible -mx-2 px-2 md:mx-0 md:px-0 mt-4 sm:mt-6">
+          <Card className="min-w-max md:min-w-0">
             <CardHeader className="py-3 sm:py-4">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
@@ -382,7 +379,7 @@ const CompareProperties = () => {
                 {/* Liked */}
                 <div 
                   className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}
+                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
                 >
                   <div className="font-medium text-muted-foreground text-xs sm:text-sm">מה אהבתי</div>
                   {comparisonData.map((item) => (
@@ -394,7 +391,7 @@ const CompareProperties = () => {
                 {/* Disliked */}
                 <div 
                   className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}
+                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
                 >
                   <div className="font-medium text-muted-foreground text-xs sm:text-sm">מה פחות אהבתי</div>
                   {comparisonData.map((item) => (
@@ -406,7 +403,7 @@ const CompareProperties = () => {
                 {/* Note */}
                 <div 
                   className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 1fr))` }}
+                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
                 >
                   <div className="font-medium text-muted-foreground text-xs sm:text-sm">הערה אישית</div>
                   {comparisonData.map((item) => (
