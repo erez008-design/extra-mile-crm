@@ -59,7 +59,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     build_year: "",
     parking_spots: "",
     has_elevator: false,
-    has_balcony: false,
     has_safe_room: false,
     has_sun_balcony: false,
     description: "",
@@ -91,7 +90,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         build_year: property.build_year?.toString() || "",
         parking_spots: property.parking_spots?.toString() || "",
         has_elevator: property.has_elevator || false,
-        has_balcony: property.has_balcony || false,
         has_safe_room: property.has_safe_room || false,
         has_sun_balcony: property.has_sun_balcony || false,
         description: property.description || "",
@@ -140,7 +138,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         build_year: formData.build_year ? parseInt(formData.build_year) : null,
         parking_spots: formData.parking_spots ? parseInt(formData.parking_spots) : null,
         has_elevator: formData.has_elevator,
-        has_balcony: formData.has_balcony,
         has_safe_room: formData.has_safe_room,
         has_sun_balcony: formData.has_sun_balcony,
         description: formData.description || null,
@@ -438,15 +435,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   className="w-5 h-5"
                 />
                 <Label htmlFor="edit-elevator" className="cursor-pointer text-base">מעלית</Label>
-              </div>
-              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
-                <Checkbox
-                  id="edit-balcony"
-                  checked={formData.has_balcony}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_balcony: checked as boolean })}
-                  className="w-5 h-5"
-                />
-                <Label htmlFor="edit-balcony" className="cursor-pointer text-base">מרפסת</Label>
               </div>
               <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
