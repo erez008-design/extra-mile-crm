@@ -83,19 +83,8 @@ serve(async (req) => {
       agentCount: agents.length 
     })
 
-    // 3. Clear existing data
-    console.log('3. Clearing existing properties...')
-    const { error: deletePropertiesError } = await supabase
-      .from('properties')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
-    
-    if (deletePropertiesError) {
-      console.error('Error deleting properties:', deletePropertiesError)
-    }
-
-    // 4. Process and insert agents
-    console.log('4. Processing agents...')
+    // 3. Process and insert agents (unchanged)
+    console.log('3. Processing agents...')
     let insertedAgents = 0
     for (const agent of agents) {
       const agentData = {
@@ -131,19 +120,26 @@ serve(async (req) => {
       }
     }
 
-    // 5. Process properties
-    console.log('5. Processing properties...')
-    const propertiesToInsert = []
-    const propertiesWithImages = new Map()
-
-    // Log first property structure to understand field names
-    if (properties.length > 0) {
-      console.log('Property fields available', { 
-        fieldCount: Object.keys(properties[0]).length,
-        hasSerial: !!properties[0].serial,
-        hasCity: !!(properties[0].city || properties[0].City)
-      })
+    // 4. Fetch existing properties to enable upsert logic
+    console.log('4. Fetching existing properties for upsert comparison...')
+    const { data: existingProperties } = await supabase
+      .from('properties')
+      .select('id, address, city')
+    
+    // Create a lookup map by address+city (composite key for matching)
+    const existingMap = new Map<string, string>()
+    for (const p of (existingProperties || [])) {
+      const key = `${p.address}|${p.city}`.toLowerCase().trim()
+      existingMap.set(key, p.id)
     }
+    console.log(`Found ${existingMap.size} existing properties`)
+
+    // 5. Process properties with upsert logic
+    console.log('5. Processing properties...')
+    const propertiesToUpsert = []
+    const propertiesWithImages = new Map()
+    let updatedCount = 0
+    let insertedCount = 0
 
     for (const property of properties) {
       // Get pictures for this property
@@ -157,16 +153,19 @@ serve(async (req) => {
         continue
       }
 
-      // Robust field extraction per Webtiv XML (see logs: city, shcuna, street, number, room, builtsqmr, comments2, priceshekel)
+      // Robust field extraction per Webtiv XML
       const street = property.street || property.Street || ''
       const number = property.number || property.Number || ''
-      const address = `${street} ${number}`.trim()
+      const address = `${street} ${number}`.trim() || 'לא צוין'
       const city = property.city || property.City || 'לא צוין'
       const neighborhood = property.shcuna || property.neighborhood || ''
       const description = (property.comments2 || property.Remarks || '').toString().trim()
       const rooms = parseFloat(property.room || property.rooms || '0') || null
       const size_sqm = parseInt(property.builtsqmr || property.sqmr || property.SQMR || '0') || null
-      const floor = parseInt(property.floor || property.Floor || '0') || null
+      
+      // Only extract floor from Webtiv if it exists (don't overwrite manual data)
+      const webtivFloor = property.floor || property.Floor
+      const floor = webtivFloor ? parseInt(webtivFloor) : null
 
       // Parse parking to a numeric approximation
       let parking_spots = 0
@@ -174,73 +173,114 @@ serve(async (req) => {
       if (park.includes('כפולה') || park.includes('עוקבת')) parking_spots = 2
       else if (park.includes('יש')) parking_spots = 1
 
-      const propertyData = {
-        address: address || 'לא צוין',
+      const lookupKey = `${address}|${city}`.toLowerCase().trim()
+      const existingId = existingMap.get(lookupKey)
+
+      // Build the property data - only include fields that come from Webtiv
+      // IMPORTANT: We do NOT include enrichment fields (renovation_status, air_directions, total_floors, build_year)
+      // to protect manual data
+      const propertyData: any = {
+        address,
         city,
         neighborhood: neighborhood || null,
         price: parseFloat(property.priceshekel || property.priceShekel || '0'),
         size_sqm,
         rooms,
-        floor,
         description,
         status: 'available',
         has_safe_room: property.mamadYN === 'true' || property.mamadYN === true,
         has_sun_balcony: property.mirpesetShemeshYN === 'true' || property.mirpesetShemeshYN === true,
         parking_spots,
-        created_by: null,
       }
 
-      console.log(`Property ${property.serial}: ${address || '(no address)'}, rooms=${rooms ?? 'na'}, size=${size_sqm ?? 'na'}m², city=${city}, desc=${description.substring(0, 40)}`)
+      // Only set floor if Webtiv provides it - otherwise leave existing value
+      if (floor !== null) {
+        propertyData.floor = floor
+      }
 
-      propertiesToInsert.push(propertyData)
-      propertiesWithImages.set(propertiesToInsert.length - 1, propertyPictures)
+      if (existingId) {
+        // Update existing property - preserve ID and don't touch enrichment fields
+        propertyData.id = existingId
+        updatedCount++
+      } else {
+        // New property
+        propertyData.created_by = null
+        insertedCount++
+      }
+
+      console.log(`Property ${property.serial}: ${address}, rooms=${rooms ?? 'na'}, size=${size_sqm ?? 'na'}m², city=${city}, existing=${!!existingId}`)
+
+      propertiesToUpsert.push(propertyData)
+      propertiesWithImages.set(propertiesToUpsert.length - 1, propertyPictures)
     }
 
-    console.log(`6. Inserting ${propertiesToInsert.length} properties...`)
-    const { data: insertedProperties, error: insertError } = await supabase
+    // 6. Upsert properties (preserving IDs and enrichment data)
+    console.log(`6. Upserting ${propertiesToUpsert.length} properties (${insertedCount} new, ${updatedCount} updates)...`)
+    const { data: upsertedProperties, error: upsertError } = await supabase
       .from('properties')
-      .insert(propertiesToInsert)
+      .upsert(propertiesToUpsert, { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      })
       .select()
 
-    if (insertError) {
-      console.error('Error inserting properties:', insertError)
-      throw insertError
+    if (upsertError) {
+      console.error('Error upserting properties:', upsertError)
+      throw upsertError
     }
 
-    // 7. Insert property images
-    console.log('7. Inserting property images...')
+    // 7. Handle property images
+    // For existing properties, we need to be careful not to duplicate images
+    console.log('7. Processing property images...')
     let totalImages = 0
-    for (let i = 0; i < insertedProperties.length; i++) {
-      const property = insertedProperties[i]
-      const pictures = propertiesWithImages.get(i)
+    
+    for (let i = 0; i < upsertedProperties.length; i++) {
+      const property = upsertedProperties[i]
+      const newPictures = propertiesWithImages.get(i)
       
-      if (pictures && pictures.length > 0) {
-        const imagesToInsert = pictures.map((pic: any, index: number) => ({
-          property_id: property.id,
-          url: pic.picurl,
-          is_primary: index === 0
-        }))
-
-        const { error: imagesError } = await supabase
+      if (newPictures && newPictures.length > 0) {
+        // Check if this property already has images
+        const { data: existingImages } = await supabase
           .from('property_images')
-          .insert(imagesToInsert)
+          .select('url')
+          .eq('property_id', property.id)
+        
+        const existingUrls = new Set((existingImages || []).map(img => img.url))
+        
+        // Only insert images that don't already exist
+        const newImagesToInsert = newPictures
+          .filter((pic: any) => !existingUrls.has(pic.picurl))
+          .map((pic: any, index: number) => ({
+            property_id: property.id,
+            url: pic.picurl,
+            is_primary: existingUrls.size === 0 && index === 0 // Only set primary if no existing images
+          }))
 
-        if (imagesError) {
-          console.error(`Error inserting images for property ${property.id}:`, imagesError)
-        } else {
-          totalImages += imagesToInsert.length
+        if (newImagesToInsert.length > 0) {
+          const { error: imagesError } = await supabase
+            .from('property_images')
+            .insert(newImagesToInsert)
+
+          if (imagesError) {
+            console.error(`Error inserting images for property ${property.id}:`, imagesError)
+          } else {
+            totalImages += newImagesToInsert.length
+          }
         }
       }
     }
 
     const result = {
       success: true,
-      inserted: insertedProperties.length,
+      total: upsertedProperties.length,
+      inserted: insertedCount,
+      updated: updatedCount,
       filtered: {
-        'no-picture': properties.length - propertiesToInsert.length
+        'no-picture': properties.length - propertiesToUpsert.length
       },
       insertedAgents: insertedAgents,
-      totalImages: totalImages
+      totalImages: totalImages,
+      message: `Synced ${upsertedProperties.length} properties (${insertedCount} new, ${updatedCount} updated). Manual enrichment data preserved.`
     }
 
     console.log('Sync completed:', result)

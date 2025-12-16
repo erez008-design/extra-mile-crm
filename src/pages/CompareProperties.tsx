@@ -35,6 +35,7 @@ interface ExtendedDetailsRow {
   total_floors: number | null;
   has_elevator: boolean | null;
   elevators_count: number | null;
+  tenants_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
   parking_type: string[] | null;
@@ -189,8 +190,11 @@ const CompareProperties = () => {
       case "total_floors":
         return prop.total_floors != null ? `${prop.total_floors}` : "—";
       case "elevators":
-        // Check from main properties table (prop.has_elevator)
-        return prop.has_elevator ? "יש" : "אין";
+        // Check from main properties table, count from extended
+        if (!prop.has_elevator) return "אין";
+        return ext?.elevators_count ? `יש (${ext.elevators_count})` : "יש";
+      case "tenants":
+        return ext?.tenants_count != null ? `${ext.tenants_count}` : "—";
       case "parking":
         // Show parking count from properties table and type from extended details
         const count = prop.parking_spots ?? ext?.parking_count ?? 0;
@@ -234,6 +238,7 @@ const CompareProperties = () => {
     { key: "floor", label: "קומה", category: "technical" },
     { key: "total_floors", label: "סה״כ קומות", category: "technical" },
     { key: "elevators", label: "מעליות", category: "technical" },
+    { key: "tenants", label: "דיירים בבניין", category: "technical" },
     { key: "parking", label: "חניה", category: "technical" },
     { key: "storage", label: "מחסן", category: "technical" },
     { key: "balcony", label: "מרפסת", category: "technical" },

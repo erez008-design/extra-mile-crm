@@ -9,6 +9,7 @@ export interface PropertyExtendedDetails {
   total_floors: number | null;
   has_elevator: boolean | null;
   elevators_count: number | null;
+  tenants_count: number | null;
   parking_count: number | null;
   parking_covered: boolean | null;
   parking_type: string[] | null;
@@ -30,6 +31,7 @@ export interface PropertyExtendedDetailsInsert {
   total_floors?: number | null;
   has_elevator?: boolean | null;
   elevators_count?: number | null;
+  tenants_count?: number | null;
   parking_count?: number | null;
   parking_covered?: boolean | null;
   parking_type?: string[] | null;
