@@ -184,22 +184,23 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6" dir="rtl">
         <DialogHeader>
-          <DialogTitle>עריכת נכס - {property?.address}</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">עריכת נכס - {property?.address}</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
           {/* Basic Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">פרטים בסיסיים</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-address">כתובת</Label>
                 <Input
                   id="edit-address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -208,6 +209,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   id="edit-city"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -217,6 +219,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -226,9 +229,10 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.size_sqm}
                   onChange={(e) => setFormData({ ...formData, size_sqm: e.target.value })}
+                  className="h-11"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label htmlFor="edit-rooms">חדרים</Label>
                 <Input
                   id="edit-rooms"
@@ -236,6 +240,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   step="0.5"
                   value={formData.rooms}
                   onChange={(e) => setFormData({ ...formData, rooms: e.target.value })}
+                  className="h-11"
                 />
               </div>
             </div>
@@ -244,7 +249,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
           {/* Building Info - Enrichment Fields */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">פרטי בניין</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-floor">קומה</Label>
                 <Input
@@ -252,6 +257,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.floor}
                   onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -261,6 +267,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.total_floors}
                   onChange={(e) => setFormData({ ...formData, total_floors: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -271,6 +278,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   placeholder="למשל: 2015"
                   value={formData.build_year}
                   onChange={(e) => setFormData({ ...formData, build_year: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -280,15 +288,16 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.parking_spots}
                   onChange={(e) => setFormData({ ...formData, parking_spots: e.target.value })}
+                  className="h-11"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label htmlFor="edit-renovation">מצב הנכס</Label>
                 <Select
                   value={formData.renovation_status}
                   onValueChange={(value) => setFormData({ ...formData, renovation_status: value })}
                 >
-                  <SelectTrigger id="edit-renovation">
+                  <SelectTrigger id="edit-renovation" className="h-11">
                     <SelectValue placeholder="בחר מצב" />
                   </SelectTrigger>
                   <SelectContent>
@@ -300,11 +309,11 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2 col-span-1 sm:col-span-2">
                 <Label>כיווני אוויר</Label>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
                   {AIR_DIRECTION_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
                       <input
                         type="checkbox"
                         checked={formData.air_directions.includes(opt.value)}
@@ -315,7 +324,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                             setFormData({ ...formData, air_directions: formData.air_directions.filter(d => d !== opt.value) });
                           }
                         }}
-                        className="w-4 h-4 rounded border-input"
+                        className="w-5 h-5 rounded border-input"
                       />
                       <span className="text-sm">{opt.label}</span>
                     </label>
@@ -328,7 +337,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
           {/* Extended Details */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">פרטים נוספים</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-balcony-size">גודל מרפסת במ״ר</Label>
                 <Input
@@ -336,13 +345,14 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.balcony_size}
                   onChange={(e) => setFormData({ ...formData, balcony_size: e.target.value })}
+                  className="h-11"
                 />
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2 col-span-1 sm:col-span-2">
                 <Label>סוג חניה</Label>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
                   {PARKING_TYPE_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
                       <input
                         type="checkbox"
                         checked={formData.parking_type.includes(opt.value)}
@@ -353,7 +363,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                             setFormData({ ...formData, parking_type: formData.parking_type.filter(t => t !== opt.value) });
                           }
                         }}
-                        className="w-4 h-4 rounded border-input"
+                        className="w-5 h-5 rounded border-input"
                       />
                       <span className="text-sm">{opt.label}</span>
                     </label>
@@ -367,6 +377,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.bathrooms}
                   onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-2">
@@ -376,15 +387,17 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   type="number"
                   value={formData.toilets}
                   onChange={(e) => setFormData({ ...formData, toilets: e.target.value })}
+                  className="h-11"
                 />
               </div>
-              <div className="flex items-center space-x-2 space-x-reverse col-span-2">
+              <div className="flex items-center space-x-2 space-x-reverse col-span-1 sm:col-span-2 min-h-[44px]">
                 <Checkbox
                   id="edit-storage"
                   checked={formData.has_storage}
                   onCheckedChange={(checked) => setFormData({ ...formData, has_storage: checked as boolean })}
+                  className="w-5 h-5"
                 />
-                <Label htmlFor="edit-storage" className="cursor-pointer">מחסן</Label>
+                <Label htmlFor="edit-storage" className="cursor-pointer text-base">מחסן</Label>
               </div>
               {formData.has_elevator && (
                 <div className="space-y-2">
@@ -395,6 +408,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                     min="1"
                     value={formData.elevators_count}
                     onChange={(e) => setFormData({ ...formData, elevators_count: e.target.value })}
+                    className="h-11"
                   />
                 </div>
               )}
@@ -406,6 +420,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   min="0"
                   value={formData.tenants_count}
                   onChange={(e) => setFormData({ ...formData, tenants_count: e.target.value })}
+                  className="h-11"
                 />
               </div>
             </div>
@@ -415,37 +430,41 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">תכונות</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
                   id="edit-elevator"
                   checked={formData.has_elevator}
                   onCheckedChange={(checked) => setFormData({ ...formData, has_elevator: checked as boolean })}
+                  className="w-5 h-5"
                 />
-                <Label htmlFor="edit-elevator" className="cursor-pointer">מעלית</Label>
+                <Label htmlFor="edit-elevator" className="cursor-pointer text-base">מעלית</Label>
               </div>
-              <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
                   id="edit-balcony"
                   checked={formData.has_balcony}
                   onCheckedChange={(checked) => setFormData({ ...formData, has_balcony: checked as boolean })}
+                  className="w-5 h-5"
                 />
-                <Label htmlFor="edit-balcony" className="cursor-pointer">מרפסת</Label>
+                <Label htmlFor="edit-balcony" className="cursor-pointer text-base">מרפסת</Label>
               </div>
-              <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
                   id="edit-sun-balcony"
                   checked={formData.has_sun_balcony}
                   onCheckedChange={(checked) => setFormData({ ...formData, has_sun_balcony: checked as boolean })}
+                  className="w-5 h-5"
                 />
-                <Label htmlFor="edit-sun-balcony" className="cursor-pointer">מרפסת שמש</Label>
+                <Label htmlFor="edit-sun-balcony" className="cursor-pointer text-base">מרפסת שמש</Label>
               </div>
-              <div className="flex items-center space-x-2 space-x-reverse">
+              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
                   id="edit-safe-room"
                   checked={formData.has_safe_room}
                   onCheckedChange={(checked) => setFormData({ ...formData, has_safe_room: checked as boolean })}
+                  className="w-5 h-5"
                 />
-                <Label htmlFor="edit-safe-room" className="cursor-pointer">ממ״ד</Label>
+                <Label htmlFor="edit-safe-room" className="cursor-pointer text-base">ממ״ד</Label>
               </div>
             </div>
           </div>
@@ -458,15 +477,16 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
               rows={3}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="text-base"
             />
           </div>
         </div>
 
-        <DialogFooter className="flex-row-reverse gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto h-11">
             ביטול
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto h-11">
             {saving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
             שמור שינויים
           </Button>

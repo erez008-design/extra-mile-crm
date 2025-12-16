@@ -740,14 +740,14 @@ const Agent = () => {
                           return (
                             <div
                               key={property.id}
-                              className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg border hover:bg-muted/50 transition-colors gap-3"
                             >
                               <div 
-                                className="flex-1 cursor-pointer"
+                                className="flex-1 cursor-pointer min-w-0"
                                 onClick={() => navigate(`/property/${property.id}`)}
                               >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="font-medium">{property.address}</div>
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <div className="font-medium text-sm sm:text-base truncate">{property.address}</div>
                                   {incomplete && (
                                     <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 text-xs gap-1">
                                       <AlertTriangle className="w-3 h-3" />
@@ -755,17 +755,20 @@ const Agent = () => {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="text-sm text-muted-foreground">{property.city}</div>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-lg font-semibold text-primary">
+                                <div className="text-xs sm:text-sm text-muted-foreground">{property.city}</div>
+                                <div className="text-base sm:text-lg font-semibold text-primary mt-1 sm:hidden">
                                   {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
                                 </div>
-                                <div className="flex gap-2">
-                                  {/* Edit button */}
+                              </div>
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                                <div className="hidden sm:block text-lg font-semibold text-primary">
+                                  {property.price ? `₪${property.price.toLocaleString()}` : 'לא צוין מחיר'}
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
                                   <Button
                                     size="sm"
                                     variant="ghost"
+                                    className="h-9 w-9 p-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setEditingProperty(property);
@@ -777,54 +780,54 @@ const Agent = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
+                                    className="h-9 text-xs sm:text-sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       sendToWebtiv(property);
                                     }}
                                     disabled={loading}
                                   >
-                                    <Send className="w-4 h-4 ml-1" />
-                                    Webtiv CRM
+                                    <Send className="w-4 h-4 sm:ml-1" />
+                                    <span className="hidden sm:inline">Webtiv</span>
                                   </Button>
                                   <Button
                                     size="sm"
+                                    className="h-9 text-xs sm:text-sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setSelectedProperty(property.id);
                                       setShowAssignDialog(true);
                                     }}
                                   >
-                                    <Users className="w-4 h-4 ml-1" />
-                                    שלח ללקוחות
+                                    <Users className="w-4 h-4 sm:ml-1" />
+                                    <span className="hidden sm:inline">שלח</span>
                                   </Button>
-                                  {/* Delete button - only show if agent created this property */}
                                   {property.created_by === currentUserId && (
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
                                         <Button
                                           size="sm"
                                           variant="ghost"
-                                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                          className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                                           onClick={(e) => e.stopPropagation()}
                                         >
                                           <Trash2 className="w-4 h-4" />
                                         </Button>
                                       </AlertDialogTrigger>
-                                      <AlertDialogContent dir="rtl">
+                                      <AlertDialogContent dir="rtl" className="w-[90vw] max-w-md">
                                         <AlertDialogHeader>
                                           <AlertDialogTitle>מחיקת נכס</AlertDialogTitle>
                                           <AlertDialogDescription>
                                             האם אתה בטוח שברצונך למחוק את הנכס "{property.address}"?
-                                            פעולה זו אינה ניתנת לביטול.
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter className="flex-row-reverse gap-2">
-                                          <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                          <AlertDialogCancel className="h-11">ביטול</AlertDialogCancel>
                                           <AlertDialogAction
                                             onClick={() => handleDeleteProperty(property.id)}
-                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            className="h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                           >
-                                            מחק נכס
+                                            מחק
                                           </AlertDialogAction>
                                         </AlertDialogFooter>
                                       </AlertDialogContent>

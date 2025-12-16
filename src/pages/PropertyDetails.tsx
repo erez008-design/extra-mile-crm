@@ -427,27 +427,27 @@ const PropertyDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-primary text-primary-foreground shadow-soft sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => navigate("/")}>
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <Button variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10 h-10 sm:h-11" onClick={() => navigate("/")}>
             <ArrowRight className="w-4 h-4 ml-2" />
             חזרה לרשימה
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content - Center/Left */}
-          <div className="lg:col-span-2 space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        <div className="flex flex-col lg:flex-row lg:gap-8">
+          {/* Main Content - Full width on mobile, 2/3 on desktop */}
+          <div className="flex-1 lg:flex-[2] space-y-4 sm:space-y-6 order-1">
             {/* Title and Description */}
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold">
+            <div className="space-y-2 sm:space-y-4">
+              <h1 className="text-2xl sm:text-3xl font-bold">
                 {property.address && property.address !== 'לא צוין' ? property.address : 'נכס'}
                 {property.address && property.city && property.city !== 'לא צוין' ? ' - ' : ''}
                 {property.city && property.city !== 'לא צוין' ? property.city : ''}
               </h1>
               {property.description && (
-                <p className="text-lg leading-relaxed text-muted-foreground">
+                <p className="text-base sm:text-lg leading-relaxed text-muted-foreground">
                   {property.description}
                 </p>
               )}
@@ -566,8 +566,8 @@ const PropertyDetails = () => {
             </Card>
           </div>
 
-          {/* Sidebar - Property Details Grid */}
-          <div className="space-y-6">
+          {/* Sidebar - Property Details Grid - Shows below content on mobile */}
+          <div className="flex-1 lg:flex-[1] space-y-4 sm:space-y-6 order-2 mt-4 lg:mt-0">
             {/* Basic Property Details */}
             <Card>
               <CardHeader className="pb-3">
