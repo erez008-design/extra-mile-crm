@@ -136,8 +136,8 @@ serve(async (req) => {
 
     // 5. Process properties with upsert logic
     console.log('5. Processing properties...')
-    const propertiesToUpsert = []
-    const propertiesWithImages = new Map()
+    const propertyMap = new Map() // Use map to deduplicate by address+city
+    const imagesByKey = new Map()
     let updatedCount = 0
     let insertedCount = 0
 
@@ -201,17 +201,36 @@ serve(async (req) => {
       if (existingId) {
         // Update existing property - preserve ID and don't touch enrichment fields
         propertyData.id = existingId
-        updatedCount++
       } else {
         // New property
         propertyData.created_by = null
-        insertedCount++
       }
 
-      console.log(`Property ${property.serial}: ${address}, rooms=${rooms ?? 'na'}, size=${size_sqm ?? 'na'}m², city=${city}, existing=${!!existingId}`)
+      // Check if we already have this property (deduplicate by address+city)
+      if (propertyMap.has(lookupKey)) {
+        console.log(`Duplicate property ${property.serial}: ${address}, ${city} - using latest data`)
+      } else {
+        if (existingId) {
+          updatedCount++
+        } else {
+          insertedCount++
+        }
+      }
 
-      propertiesToUpsert.push(propertyData)
-      propertiesWithImages.set(propertiesToUpsert.length - 1, propertyPictures)
+      // Always use the latest property data for duplicates
+      propertyMap.set(lookupKey, propertyData)
+      imagesByKey.set(lookupKey, propertyPictures)
+
+      console.log(`Property ${property.serial}: ${address}, rooms=${rooms ?? 'na'}, size=${size_sqm ?? 'na'}m², city=${city}, existing=${!!existingId}`)
+    }
+
+    // Convert map to array for upsert
+    const propertiesToUpsert = Array.from(propertyMap.values())
+    const propertiesWithImages = new Map()
+    let idx = 0
+    for (const [key, _] of propertyMap) {
+      propertiesWithImages.set(idx, imagesByKey.get(key))
+      idx++
     }
 
     // 6. Upsert properties (preserving IDs and enrichment data)
