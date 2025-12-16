@@ -629,63 +629,57 @@ const PropertyDetails = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="space-y-3">
-                  {/* Building Year - ALWAYS SHOW */}
-                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-primary" />
-                      <span className="text-sm text-muted-foreground">שנת בנייה</span>
-                    </div>
-                    <span className="font-semibold text-primary">{property.build_year ?? '-'}</span>
-                  </div>
-
-                  {/* Elevators - ALWAYS SHOW */}
-                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-primary" />
-                      <span className="text-sm text-muted-foreground">מעליות</span>
-                    </div>
-                    <span className="font-semibold text-primary">
-                      {property.has_elevator === true 
-                        ? extendedDetails?.elevators_count 
-                          ? `יש (${extendedDetails.elevators_count})`
-                          : "יש"
-                        : "אין"}
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Floor - Force display of property.floor */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">קומה</span>
+                    <span className="font-medium">
+                      {property.floor !== null && property.floor !== undefined ? property.floor : '-'}
+                      {property.total_floors ? ` מתוך ${property.total_floors}` : ''}
                     </span>
                   </div>
 
-                  {/* Tenants Count */}
-                  {extendedDetails?.tenants_count != null && (
-                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
-                        <span className="text-sm text-muted-foreground">דיירים בבניין</span>
-                      </div>
-                      <span className="font-semibold text-primary">{extendedDetails.tenants_count}</span>
-                    </div>
-                  )}
-
-                  {/* Renovation Status - ALWAYS SHOW */}
-                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Wrench className="w-5 h-5 text-primary" />
-                      <span className="text-sm text-muted-foreground">מצב הנכס</span>
-                    </div>
-                    <span className="font-semibold text-primary">{property.renovation_status ? getRenovationLabel(property.renovation_status) : '-'}</span>
+                  {/* Elevator - Check explicitly for boolean true */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">מעלית</span>
+                    <span className="font-medium">
+                      {property.has_elevator === true ? 'יש' : 'אין'}
+                    </span>
                   </div>
 
-                  {/* Air Directions */}
-                  {getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null) && (
-                    <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Wind className="w-5 h-5 text-primary" />
-                        <span className="text-sm text-muted-foreground">כיווני אוויר</span>
-                      </div>
-                      <span className="font-semibold text-primary text-sm">
-                        {getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null)}
-                      </span>
-                    </div>
-                  )}
+                  {/* Parking - Show 0 if 0 */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">חניה</span>
+                    <span className="font-medium">
+                      {property.parking_spots !== null ? property.parking_spots : '0'}
+                    </span>
+                  </div>
+
+                  {/* Build Year */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">שנת בנייה</span>
+                    <span className="font-medium">
+                      {property.build_year || '-'}
+                    </span>
+                  </div>
+
+                  {/* Air Directions - Join the array */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">כיווני אוויר</span>
+                    <span className="font-medium text-right">
+                      {property.air_directions && property.air_directions.length > 0
+                        ? getAirDirectionsDisplay(property.air_directions)
+                        : '-'}
+                    </span>
+                  </div>
+
+                  {/* Renovation Status */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">מצב הנכס</span>
+                    <span className="font-medium">
+                      {property.renovation_status ? getRenovationLabel(property.renovation_status) : '-'}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
