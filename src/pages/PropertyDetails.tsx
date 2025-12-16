@@ -43,7 +43,6 @@ interface Property {
   total_floors: number | null;
   description: string | null;
   has_sun_balcony: boolean | null;
-  has_balcony: boolean | null;
   parking_spots: number | null;
   has_safe_room: boolean | null;
   has_elevator: boolean | null;

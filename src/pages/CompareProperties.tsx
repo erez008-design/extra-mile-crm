@@ -206,12 +206,9 @@ const CompareProperties = () => {
         if (!ext.has_storage) return "אין";
         return ext.storage_size_sqm ? `יש (${ext.storage_size_sqm} מ״ר)` : "יש";
       case "balcony":
-        // Check has_balcony from properties table, size from extended
-        if (!prop.has_balcony) return "אין";
-        return ext?.balcony_size_sqm ? `כן (${ext.balcony_size_sqm} מ״ר)` : "כן";
-      case "sun_balcony":
-        // Check from main properties table
-        return prop.has_sun_balcony ? "יש" : "אין";
+        // Now uses only has_sun_balcony (balcony = sun balcony)
+        if (!prop.has_sun_balcony) return "אין";
+        return ext?.balcony_size_sqm ? `יש (${ext.balcony_size_sqm} מ״ר)` : "יש";
       case "renovation":
         // Read from main properties table
         return getRenovationLabel(prop.renovation_status);
@@ -241,7 +238,7 @@ const CompareProperties = () => {
     { key: "tenants", label: "דיירים בבניין", category: "technical" },
     { key: "parking", label: "חניה", category: "technical" },
     { key: "storage", label: "מחסן", category: "technical" },
-    { key: "balcony", label: "מרפסת", category: "technical" },
+    { key: "balcony", label: "מרפסת שמש", category: "technical" },
     { key: "renovation", label: "רמת שיפוץ", category: "technical" },
     { key: "bathrooms", label: "חדרי רחצה", category: "technical" },
     { key: "toilets", label: "שירותים", category: "technical" },
