@@ -128,14 +128,15 @@ const CompareProperties = () => {
     }).format(price);
   };
 
-  const getRenovationLabel = (level: string | null | undefined) => {
-    if (!level) return "—";
+  const getRenovationLabel = (status: string | null | undefined) => {
+    if (!status) return "—";
     const labels: Record<string, string> = {
-      new: "חדש",
+      new: "חדש מקבלן",
       renovated: "משופץ",
-      needs_renovation: "דרוש שיפוץ",
+      good: "במצב טוב",
+      needs_renovation: "דורש שיפוץ",
     };
-    return labels[level] || level;
+    return labels[status] || status;
   };
 
   const getParkingTypeDisplay = (types: string[] | null | undefined) => {
@@ -201,7 +202,7 @@ const CompareProperties = () => {
         if (!prop.has_balcony) return "אין";
         return ext?.balcony_size_sqm ? `כן (${ext.balcony_size_sqm} מ״ר)` : "כן";
       case "renovation":
-        return getRenovationLabel(ext?.renovation_level);
+        return getRenovationLabel(prop.renovation_status);
       case "bathrooms":
         return ext?.bathrooms != null ? `${ext.bathrooms}` : "—";
       case "toilets":
@@ -209,7 +210,8 @@ const CompareProperties = () => {
       case "building_year":
         return ext?.building_year != null ? `${ext.building_year}` : "—";
       case "air_directions":
-        return getAirDirectionsDisplay(ext?.air_directions || null);
+        // Check main properties table first, then extended details
+        return getAirDirectionsDisplay(prop.air_directions || ext?.air_directions || null);
       default:
         return "—";
     }
