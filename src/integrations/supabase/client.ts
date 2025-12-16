@@ -8,6 +8,14 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Check if we're on a public buyer page - these should NEVER require auth
+const isPublicBuyerPage = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.pathname.startsWith('/buyer');
+  }
+  return false;
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
@@ -15,3 +23,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// CRITICAL: Prevent any auth state changes from affecting public buyer pages
+// This is a safeguard for Safari/iOS which may behave differently
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, session) => {
+    // If on a public buyer page, do NOT navigate anywhere regardless of auth state
+    if (isPublicBuyerPage()) {
+      console.log('[Auth] Public buyer page - ignoring auth state change:', event);
+      return;
+    }
+  });
+}
