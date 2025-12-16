@@ -181,12 +181,16 @@ const CompareProperties = () => {
       case "rooms":
         return prop.rooms ? `${prop.rooms}` : "—";
       case "floor":
-        return ext?.floor != null ? `${ext.floor}` : "—";
+        // Read from main properties table
+        if (prop.floor != null && prop.total_floors != null) {
+          return `${prop.floor} מתוך ${prop.total_floors}`;
+        }
+        return prop.floor != null ? `${prop.floor}` : "—";
       case "total_floors":
-        return ext?.total_floors != null ? `${ext.total_floors}` : "—";
+        return prop.total_floors != null ? `${prop.total_floors}` : "—";
       case "elevators":
-        if (!ext) return "—";
-        return ext.has_elevator ? (ext.elevators_count ? `${ext.elevators_count}` : "יש") : "אין";
+        // Check from main properties table (prop.has_elevator)
+        return prop.has_elevator ? "יש" : "אין";
       case "parking":
         // Show parking count from properties table and type from extended details
         const count = prop.parking_spots ?? ext?.parking_count ?? 0;
@@ -201,14 +205,19 @@ const CompareProperties = () => {
         // Check has_balcony from properties table, size from extended
         if (!prop.has_balcony) return "אין";
         return ext?.balcony_size_sqm ? `כן (${ext.balcony_size_sqm} מ״ר)` : "כן";
+      case "sun_balcony":
+        // Check from main properties table
+        return prop.has_sun_balcony ? "יש" : "אין";
       case "renovation":
+        // Read from main properties table
         return getRenovationLabel(prop.renovation_status);
       case "bathrooms":
         return ext?.bathrooms != null ? `${ext.bathrooms}` : "—";
       case "toilets":
         return ext?.toilets != null ? `${ext.toilets}` : "—";
       case "building_year":
-        return ext?.building_year != null ? `${ext.building_year}` : "—";
+        // Read from main properties table
+        return prop.build_year != null ? `${prop.build_year}` : "—";
       case "air_directions":
         // Check main properties table first, then extended details
         return getAirDirectionsDisplay(prop.air_directions || ext?.air_directions || null);
