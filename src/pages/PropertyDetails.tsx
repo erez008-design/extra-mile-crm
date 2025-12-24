@@ -54,6 +54,8 @@ interface Property {
 }
 
 interface ExtendedDetails {
+  floor: number | null;
+  total_floors: number | null;
   elevators_count: number | null;
   tenants_count: number | null;
   parking_count: number | null;
@@ -63,6 +65,8 @@ interface ExtendedDetails {
   balcony_size_sqm: number | null;
   bathrooms: number | null;
   toilets: number | null;
+  building_year: number | null;
+  renovation_level: string | null;
   air_directions: string[] | null;
 }
 
@@ -633,12 +637,16 @@ const PropertyDetails = () => {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Floor */}
+                  {/* Floor - fallback: property -> extendedDetails */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">קומה</span>
                     <span className="font-medium">
-                      {property.floor != null ? property.floor : '-'}
-                      {property.total_floors != null ? ` מתוך ${property.total_floors}` : ''}
+                      {(() => {
+                        const floor = property.floor ?? extendedDetails?.floor;
+                        const totalFloors = property.total_floors ?? extendedDetails?.total_floors;
+                        if (floor == null) return '-';
+                        return totalFloors != null ? `${floor} מתוך ${totalFloors}` : `${floor}`;
+                      })()}
                     </span>
                   </div>
 
@@ -662,7 +670,7 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Parking */}
+                  {/* Parking - fallback: property.parking_spots -> extendedDetails.parking_count */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">חניה</span>
                     <span className="font-medium">
@@ -699,11 +707,14 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Renovation Level */}
+                  {/* Renovation Level - fallback: property.renovation_status -> extendedDetails.renovation_level */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">רמת שיפוץ</span>
                     <span className="font-medium">
-                      {property.renovation_status ? getRenovationLabel(property.renovation_status) : '-'}
+                      {(() => {
+                        const status = property.renovation_status || extendedDetails?.renovation_level;
+                        return status ? getRenovationLabel(status) : '-';
+                      })()}
                     </span>
                   </div>
 
@@ -723,21 +734,27 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Building Year */}
+                  {/* Building Year - fallback: property.build_year -> extendedDetails.building_year */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">שנת בנייה</span>
                     <span className="font-medium">
-                      {property.build_year != null ? property.build_year : '-'}
+                      {(() => {
+                        const year = property.build_year ?? extendedDetails?.building_year;
+                        return year != null ? year : '-';
+                      })()}
                     </span>
                   </div>
 
-                  {/* Air Directions - full width */}
+                  {/* Air Directions - fallback: property -> extendedDetails, full width */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg col-span-2">
                     <span className="text-muted-foreground">כיווני אוויר</span>
                     <span className="font-medium text-left">
-                      {(property.air_directions?.length || extendedDetails?.air_directions?.length)
-                        ? getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null)
-                        : '-'}
+                      {(() => {
+                        const directions = property.air_directions?.length 
+                          ? property.air_directions 
+                          : extendedDetails?.air_directions;
+                        return directions?.length ? getAirDirectionsDisplay(directions) : '-';
+                      })()}
                     </span>
                   </div>
                 </div>
