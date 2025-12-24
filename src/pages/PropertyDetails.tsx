@@ -184,11 +184,14 @@ const PropertyDetails = () => {
   const fetchExtendedDetails = async () => {
     if (!id) return;
     
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("property_extended_details")
       .select("*")
       .eq("property_id", id)
       .maybeSingle();
+    
+    // DEBUG: Log extended details fetch result (remove after verification)
+    console.log('[PropertyDetails] Extended details for property:', id, { data, error });
     
     if (data) {
       setExtendedDetails(data);
