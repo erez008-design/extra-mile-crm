@@ -620,64 +620,121 @@ const PropertyDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Building Info */}
+            {/* Building Info - Technical Details Grid */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-primary" />
-                  מידע על הבניין
+                  נתונים טכניים
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="grid grid-cols-1 gap-3">
-                  {/* Floor - Force display of property.floor */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Floor */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">קומה</span>
                     <span className="font-medium">
-                      {property.floor !== null && property.floor !== undefined ? property.floor : '-'}
-                      {property.total_floors ? ` מתוך ${property.total_floors}` : ''}
+                      {property.floor != null ? property.floor : '-'}
+                      {property.total_floors != null ? ` מתוך ${property.total_floors}` : ''}
                     </span>
                   </div>
 
-                  {/* Elevator - Check explicitly for boolean true */}
+                  {/* Elevator */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">מעלית</span>
+                    <span className="text-muted-foreground">מעליות</span>
                     <span className="font-medium">
-                      {property.has_elevator === true ? 'יש' : 'אין'}
+                      {property.has_elevator 
+                        ? extendedDetails?.elevators_count 
+                          ? `יש (${extendedDetails.elevators_count})`
+                          : 'יש'
+                        : 'אין'}
                     </span>
                   </div>
 
-                  {/* Parking - Show 0 if 0 */}
+                  {/* Tenants in building */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">דיירים בבניין</span>
+                    <span className="font-medium">
+                      {extendedDetails?.tenants_count != null ? extendedDetails.tenants_count : '-'}
+                    </span>
+                  </div>
+
+                  {/* Parking */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">חניה</span>
                     <span className="font-medium">
-                      {property.parking_spots !== null ? property.parking_spots : '0'}
+                      {(() => {
+                        const count = property.parking_spots ?? extendedDetails?.parking_count ?? 0;
+                        const typeDisplay = getParkingTypeDisplay(extendedDetails?.parking_type);
+                        if (count === 0 && !typeDisplay) return 'אין';
+                        return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
+                      })()}
                     </span>
                   </div>
 
-                  {/* Build Year */}
+                  {/* Storage */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">מחסן</span>
+                    <span className="font-medium">
+                      {extendedDetails?.has_storage 
+                        ? extendedDetails.storage_size_sqm 
+                          ? `יש (${extendedDetails.storage_size_sqm} מ״ר)`
+                          : 'יש'
+                        : 'אין'}
+                    </span>
+                  </div>
+
+                  {/* Sun Balcony */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">מרפסת שמש</span>
+                    <span className="font-medium">
+                      {property.has_sun_balcony 
+                        ? extendedDetails?.balcony_size_sqm 
+                          ? `יש (${extendedDetails.balcony_size_sqm} מ״ר)`
+                          : 'יש'
+                        : 'אין'}
+                    </span>
+                  </div>
+
+                  {/* Renovation Level */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">רמת שיפוץ</span>
+                    <span className="font-medium">
+                      {property.renovation_status ? getRenovationLabel(property.renovation_status) : '-'}
+                    </span>
+                  </div>
+
+                  {/* Bathrooms */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">חדרי רחצה</span>
+                    <span className="font-medium">
+                      {extendedDetails?.bathrooms != null ? extendedDetails.bathrooms : '-'}
+                    </span>
+                  </div>
+
+                  {/* Toilets */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                    <span className="text-muted-foreground">שירותים</span>
+                    <span className="font-medium">
+                      {extendedDetails?.toilets != null ? extendedDetails.toilets : '-'}
+                    </span>
+                  </div>
+
+                  {/* Building Year */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">שנת בנייה</span>
                     <span className="font-medium">
-                      {property.build_year || '-'}
+                      {property.build_year != null ? property.build_year : '-'}
                     </span>
                   </div>
 
-                  {/* Air Directions - Join the array */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
+                  {/* Air Directions - full width */}
+                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg col-span-2">
                     <span className="text-muted-foreground">כיווני אוויר</span>
-                    <span className="font-medium text-right">
-                      {property.air_directions && property.air_directions.length > 0
-                        ? getAirDirectionsDisplay(property.air_directions)
+                    <span className="font-medium text-left">
+                      {(property.air_directions?.length || extendedDetails?.air_directions?.length)
+                        ? getAirDirectionsDisplay(property.air_directions || extendedDetails?.air_directions || null)
                         : '-'}
-                    </span>
-                  </div>
-
-                  {/* Renovation Status */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">מצב הנכס</span>
-                    <span className="font-medium">
-                      {property.renovation_status ? getRenovationLabel(property.renovation_status) : '-'}
                     </span>
                   </div>
                 </div>
