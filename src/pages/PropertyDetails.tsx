@@ -188,14 +188,11 @@ const PropertyDetails = () => {
   const fetchExtendedDetails = async () => {
     if (!id) return;
     
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("property_extended_details")
       .select("*")
       .eq("property_id", id)
       .maybeSingle();
-    
-    // DEBUG: Log extended details fetch result (remove after verification)
-    console.log('[PropertyDetails] Extended details for property:', id, { data, error });
     
     if (data) {
       setExtendedDetails(data);
@@ -637,13 +634,13 @@ const PropertyDetails = () => {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Floor - fallback: property -> extendedDetails */}
+                  {/* Floor - priority: extendedDetails (manual) -> property (WEBTIV) */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">קומה</span>
                     <span className="font-medium">
                       {(() => {
-                        const floor = property.floor ?? extendedDetails?.floor;
-                        const totalFloors = property.total_floors ?? extendedDetails?.total_floors;
+                        const floor = extendedDetails?.floor ?? property.floor;
+                        const totalFloors = extendedDetails?.total_floors ?? property.total_floors;
                         if (floor == null) return '-';
                         return totalFloors != null ? `${floor} מתוך ${totalFloors}` : `${floor}`;
                       })()}
@@ -670,12 +667,12 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Parking - fallback: property.parking_spots -> extendedDetails.parking_count */}
+                  {/* Parking - priority: extendedDetails.parking_count -> property.parking_spots */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">חניה</span>
                     <span className="font-medium">
                       {(() => {
-                        const count = property.parking_spots ?? extendedDetails?.parking_count ?? 0;
+                        const count = extendedDetails?.parking_count ?? property.parking_spots ?? 0;
                         const typeDisplay = getParkingTypeDisplay(extendedDetails?.parking_type);
                         if (count === 0 && !typeDisplay) return 'אין';
                         return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
@@ -707,12 +704,12 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Renovation Level - fallback: property.renovation_status -> extendedDetails.renovation_level */}
+                  {/* Renovation Level - priority: extendedDetails.renovation_level -> property.renovation_status */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">רמת שיפוץ</span>
                     <span className="font-medium">
                       {(() => {
-                        const status = property.renovation_status || extendedDetails?.renovation_level;
+                        const status = extendedDetails?.renovation_level || property.renovation_status;
                         return status ? getRenovationLabel(status) : '-';
                       })()}
                     </span>
@@ -734,25 +731,25 @@ const PropertyDetails = () => {
                     </span>
                   </div>
 
-                  {/* Building Year - fallback: property.build_year -> extendedDetails.building_year */}
+                  {/* Building Year - priority: extendedDetails.building_year -> property.build_year */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
                     <span className="text-muted-foreground">שנת בנייה</span>
                     <span className="font-medium">
                       {(() => {
-                        const year = property.build_year ?? extendedDetails?.building_year;
+                        const year = extendedDetails?.building_year ?? property.build_year;
                         return year != null ? year : '-';
                       })()}
                     </span>
                   </div>
 
-                  {/* Air Directions - fallback: property -> extendedDetails, full width */}
+                  {/* Air Directions - priority: extendedDetails -> property, full width */}
                   <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg col-span-2">
                     <span className="text-muted-foreground">כיווני אוויר</span>
                     <span className="font-medium text-left">
                       {(() => {
-                        const directions = property.air_directions?.length 
-                          ? property.air_directions 
-                          : extendedDetails?.air_directions;
+                        const directions = extendedDetails?.air_directions?.length 
+                          ? extendedDetails.air_directions 
+                          : property.air_directions;
                         return directions?.length ? getAirDirectionsDisplay(directions) : '-';
                       })()}
                     </span>
