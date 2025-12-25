@@ -56,6 +56,7 @@ interface Property {
 interface ExtendedDetails {
   floor: number | null;
   total_floors: number | null;
+  has_elevator: boolean | null;
   elevators_count: number | null;
   tenants_count: number | null;
   parking_count: number | null;
@@ -633,129 +634,120 @@ const PropertyDetails = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Floor - use property first (like header does), fallback to extendedDetails */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">קומה</span>
-                    <span className="font-medium">
-                      {property.floor != null 
-                        ? `${property.floor}${property.total_floors != null ? ` מתוך ${property.total_floors}` : ''}`
-                        : extendedDetails?.floor != null 
-                          ? `${extendedDetails.floor}${extendedDetails.total_floors != null ? ` מתוך ${extendedDetails.total_floors}` : ''}`
-                          : '-'}
+                <div className="grid grid-cols-2 gap-4 text-right">
+                  {/* Floor */}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">קומה</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const f = extendedDetails?.floor !== null && extendedDetails?.floor !== undefined ? extendedDetails?.floor : property?.floor;
+                        const tf = extendedDetails?.total_floors !== null && extendedDetails?.total_floors !== undefined ? extendedDetails?.total_floors : property?.total_floors;
+                        if (f === null || f === undefined) return '-';
+                        return tf ? `${f} מתוך ${tf}` : f;
+                      })()}
                     </span>
                   </div>
 
                   {/* Elevator */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">מעליות</span>
-                    <span className="font-medium">
-                      {property.has_elevator 
-                        ? extendedDetails?.elevators_count 
-                          ? `יש (${extendedDetails.elevators_count})`
-                          : 'יש'
-                        : 'אין'}
-                    </span>
-                  </div>
-
-                  {/* Tenants in building */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">דיירים בבניין</span>
-                    <span className="font-medium">
-                      {extendedDetails?.tenants_count != null ? extendedDetails.tenants_count : '-'}
-                    </span>
-                  </div>
-
-                  {/* Parking - property.parking_spots first, fallback to extendedDetails */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">חניה</span>
-                    <span className="font-medium">
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">מעלית</span>
+                    <span className="font-semibold">
                       {(() => {
-                        const count = property.parking_spots != null 
-                          ? property.parking_spots 
-                          : extendedDetails?.parking_count != null 
-                            ? extendedDetails.parking_count 
-                            : 0;
+                        const hasElev = extendedDetails?.has_elevator !== null && extendedDetails?.has_elevator !== undefined ? extendedDetails?.has_elevator : property?.has_elevator;
+                        const elevCount = extendedDetails?.elevators_count;
+                        if (!hasElev) return 'אין';
+                        return elevCount ? `יש (${elevCount})` : 'יש';
+                      })()}
+                    </span>
+                  </div>
+
+                  {/* Parking */}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">חניה</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const count = extendedDetails?.parking_count !== null && extendedDetails?.parking_count !== undefined ? extendedDetails?.parking_count : property?.parking_spots;
                         const typeDisplay = getParkingTypeDisplay(extendedDetails?.parking_type);
-                        if (count === 0 && !typeDisplay) return 'אין';
+                        if (count === null || count === undefined || count === 0) return typeDisplay || 'אין';
                         return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
                       })()}
                     </span>
                   </div>
 
                   {/* Storage */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">מחסן</span>
-                    <span className="font-medium">
-                      {extendedDetails?.has_storage 
-                        ? extendedDetails.storage_size_sqm 
-                          ? `יש (${extendedDetails.storage_size_sqm} מ״ר)`
-                          : 'יש'
-                        : 'אין'}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">מחסן</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const hasStorage = extendedDetails?.has_storage;
+                        const storageSize = extendedDetails?.storage_size_sqm;
+                        if (!hasStorage) return 'אין';
+                        return storageSize ? `יש (${storageSize} מ״ר)` : 'יש';
+                      })()}
                     </span>
                   </div>
 
-                  {/* Sun Balcony */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">מרפסת שמש</span>
-                    <span className="font-medium">
-                      {property.has_sun_balcony 
-                        ? extendedDetails?.balcony_size_sqm 
-                          ? `יש (${extendedDetails.balcony_size_sqm} מ״ר)`
-                          : 'יש'
-                        : 'אין'}
+                  {/* Balcony */}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">מרפסת שמש</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const hasSunBalcony = property?.has_sun_balcony;
+                        const balconySize = extendedDetails?.balcony_size_sqm;
+                        if (!hasSunBalcony) return 'אין';
+                        return balconySize ? `יש (${balconySize} מ״ר)` : 'יש';
+                      })()}
                     </span>
                   </div>
 
-                  {/* Renovation Level - property.renovation_status first */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">רמת שיפוץ</span>
-                    <span className="font-medium">
-                      {property.renovation_status 
-                        ? getRenovationLabel(property.renovation_status) 
-                        : extendedDetails?.renovation_level 
-                          ? getRenovationLabel(extendedDetails.renovation_level)
-                          : '-'}
+                  {/* Renovation */}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">רמת שיפוץ</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const level = extendedDetails?.renovation_level !== null && extendedDetails?.renovation_level !== undefined ? extendedDetails?.renovation_level : property?.renovation_status;
+                        if (!level) return '-';
+                        return getRenovationLabel(level);
+                      })()}
+                    </span>
+                  </div>
+
+                  {/* Building Year */}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">שנת בנייה</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const year = extendedDetails?.building_year !== null && extendedDetails?.building_year !== undefined ? extendedDetails?.building_year : property?.build_year;
+                        return year ?? '-';
+                      })()}
                     </span>
                   </div>
 
                   {/* Bathrooms */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">חדרי רחצה</span>
-                    <span className="font-medium">
-                      {extendedDetails?.bathrooms != null ? extendedDetails.bathrooms : '-'}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">חדרי רחצה</span>
+                    <span className="font-semibold">
+                      {extendedDetails?.bathrooms ?? '-'}
                     </span>
                   </div>
 
                   {/* Toilets */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">שירותים</span>
-                    <span className="font-medium">
-                      {extendedDetails?.toilets != null ? extendedDetails.toilets : '-'}
+                  <div className="flex flex-col border-b pb-2">
+                    <span className="text-gray-500 text-sm">שירותים</span>
+                    <span className="font-semibold">
+                      {extendedDetails?.toilets ?? '-'}
                     </span>
                   </div>
 
-                  {/* Building Year - property.build_year first */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg">
-                    <span className="text-muted-foreground">שנת בנייה</span>
-                    <span className="font-medium">
-                      {property.build_year != null 
-                        ? property.build_year 
-                        : extendedDetails?.building_year != null 
-                          ? extendedDetails.building_year 
-                          : '-'}
-                    </span>
-                  </div>
-
-                  {/* Air Directions - property first, full width */}
-                  <div className="flex justify-between items-center p-3 bg-secondary/20 rounded-lg col-span-2">
-                    <span className="text-muted-foreground">כיווני אוויר</span>
-                    <span className="font-medium text-left">
-                      {property.air_directions?.length 
-                        ? getAirDirectionsDisplay(property.air_directions)
-                        : extendedDetails?.air_directions?.length 
-                          ? getAirDirectionsDisplay(extendedDetails.air_directions)
-                          : '-'}
+                  {/* Air Directions (Full Width) */}
+                  <div className="flex flex-col border-b pb-2 col-span-2">
+                    <span className="text-gray-500 text-sm">כיווני אוויר</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const dirs = extendedDetails?.air_directions?.length ? extendedDetails?.air_directions : property?.air_directions;
+                        if (!dirs?.length) return '-';
+                        return getAirDirectionsDisplay(dirs);
+                      })()}
                     </span>
                   </div>
                 </div>
