@@ -395,6 +395,57 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          agent_id: string
+          buyer_id: string
+          created_at: string
+          id: string
+          is_read_by_agent: boolean
+          is_read_by_manager: boolean
+          match_reason: string | null
+          match_score: number
+          property_id: string
+        }
+        Insert: {
+          agent_id: string
+          buyer_id: string
+          created_at?: string
+          id?: string
+          is_read_by_agent?: boolean
+          is_read_by_manager?: boolean
+          match_reason?: string | null
+          match_score: number
+          property_id: string
+        }
+        Update: {
+          agent_id?: string
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          is_read_by_agent?: boolean
+          is_read_by_manager?: boolean
+          match_reason?: string | null
+          match_score?: number
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agent_id: string | null
@@ -772,6 +823,13 @@ export type Database = {
           reason: string
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       update_buyer_property: {
         Args: {
           p_buyer_id: string
@@ -786,7 +844,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "agent" | "client"
+      app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -914,7 +972,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "agent", "client"],
+      app_role: ["admin", "agent", "client", "manager"],
     },
   },
 } as const

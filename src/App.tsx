@@ -14,6 +14,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Buyer from "./pages/Buyer";
 import BuyerPropertyDetails from "./pages/BuyerPropertyDetails";
 import CompareProperties from "./pages/CompareProperties";
+import ManagerDashboard from "./pages/ManagerDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/buyer/:buyerId" element={<Buyer />} />
           <Route path="/buyer/:buyerId/property/:propertyId" element={<BuyerPropertyDetails />} />
           <Route path="/compare" element={<CompareProperties />} />
+          <Route path="/manager/dashboard" element={<ManagerDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
