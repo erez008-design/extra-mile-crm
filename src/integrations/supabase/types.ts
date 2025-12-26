@@ -830,6 +830,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_agent_for_buyer: {
+        Args: { _buyer_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
       update_buyer_property: {
         Args: {
           p_buyer_id: string
