@@ -90,6 +90,7 @@ export type Database = {
       }
       buyer_properties: {
         Row: {
+          agent_feedback: string | null
           agent_id: string | null
           buyer_id: string | null
           disliked_text: string | null
@@ -104,6 +105,7 @@ export type Database = {
           visited_at: string | null
         }
         Insert: {
+          agent_feedback?: string | null
           agent_id?: string | null
           buyer_id?: string | null
           disliked_text?: string | null
@@ -118,6 +120,7 @@ export type Database = {
           visited_at?: string | null
         }
         Update: {
+          agent_feedback?: string | null
           agent_id?: string | null
           buyer_id?: string | null
           disliked_text?: string | null

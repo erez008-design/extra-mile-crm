@@ -69,10 +69,18 @@ serve(async (req) => {
     // Get already assigned properties to exclude
     const { data: assignedProperties } = await supabase
       .from("buyer_properties")
-      .select("property_id")
+      .select("property_id, agent_feedback, status")
       .eq("buyer_id", buyerId);
 
     const assignedIds = assignedProperties?.map(p => p.property_id) || [];
+    
+    // Extract agent feedback for learning (only from properties with feedback)
+    const agentFeedbackList = assignedProperties
+      ?.filter(p => p.agent_feedback && p.agent_feedback.trim().length > 0)
+      .map(p => ({
+        feedback: p.agent_feedback,
+        status: p.status,
+      })) || [];
 
     // Fetch ALL available properties first (for tracking hard filter failures)
     const { data: allProperties, error: allPropsError } = await supabase
@@ -236,6 +244,27 @@ serve(async (req) => {
       summary: `נכס ב${p.address}, ${p.city}. ${p.rooms || "?"} חדרים, ${p.size_sqm || "?"} מ"ר, קומה ${p.floor || "?"}, מחיר: ₪${p.price?.toLocaleString() || "?"}. ${p.has_safe_room ? "יש ממ\"ד" : "אין ממ\"ד"}, ${p.has_sun_balcony ? "יש מרפסת שמש" : ""}, ${p.has_elevator ? "יש מעלית" : ""}, ${p.parking_spots || 0} חניות. ${p.description || ""}`
     }));
 
+    // Build agent feedback context for AI
+    let agentFeedbackContext = "";
+    if (agentFeedbackList.length > 0) {
+      const negativeFeedback = agentFeedbackList
+        .filter(f => f.status === "not_interested")
+        .map(f => f.feedback);
+      const positiveFeedback = agentFeedbackList
+        .filter(f => f.status === "interested" || f.status === "visited")
+        .map(f => f.feedback);
+      
+      if (negativeFeedback.length > 0 || positiveFeedback.length > 0) {
+        agentFeedbackContext = `
+**הערות סוכן על נכסים קודמים (חשוב מאוד!):**
+${negativeFeedback.length > 0 ? `דברים שהלקוח לא אהב: ${negativeFeedback.join("; ")}` : ""}
+${positiveFeedback.length > 0 ? `דברים שהלקוח אהב: ${positiveFeedback.join("; ")}` : ""}
+
+⚠️ חשוב: אם נכס מכיל תכונה שהסוכן ציין שהלקוח לא אהב - הורד את הציון משמעותית!
+`;
+      }
+    }
+
     // Build AI prompt for soft matching/ranking
     const prompt = `אתה עוזר לסוכני נדל"ן להתאים נכסים ללקוחות.
 
@@ -249,12 +278,13 @@ ${buyer.global_disliked_profile || "לא צוין"}
 
 **סיכום כללי:**
 ${buyer.client_match_summary || "לא צוין"}
-
+${agentFeedbackContext}
 להלן רשימת נכסים שעברו סינון ראשוני לפי דרישות הלקוח (תקציב, חדרים, עיר, תכונות נדרשות):
 ${propertiesSummary.map((p, i) => `${i + 1}. [ID: ${p.id}] ${p.summary}`).join("\n")}
 
 נא לדרג את הנכסים לפי התאמה לפרופיל הטעם של הלקוח.
 שים לב במיוחד לדברים שהלקוח לא אוהב - אם נכס מכיל משהו מהרשימה השלילית, תן לו ציון נמוך או אל תכלול אותו.
+**חשוב במיוחד: התייחס להערות הסוכן על נכסים קודמים - אלו תובנות אמיתיות על העדפות הלקוח!**
 
 החזר JSON עם מערך של עד 10 נכסים מותאמים, מהכי מתאים לפחות מתאים.
 
@@ -270,7 +300,7 @@ ${propertiesSummary.map((p, i) => `${i + 1}. [ID: ${p.id}] ${p.summary}`).join("
 }
 
 דרג רק נכסים שיש להם התאמה של לפחות 40 נקודות.
-אם נכס מכיל משהו שהלקוח פוסל במפורש - אל תכלול אותו.`;
+אם נכס מכיל משהו שהלקוח פוסל במפורש או שהסוכן ציין שהלקוח לא אהב - אל תכלול אותו.`;
 
     console.log("Sending AI matching request for buyer:", buyerId, "with", properties.length, "pre-filtered properties");
 

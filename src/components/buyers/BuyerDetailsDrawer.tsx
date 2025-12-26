@@ -1,6 +1,7 @@
-import { Building2, MapPin, Maximize, Phone, Calendar, Home, DollarSign, Layers, Shield, CircleParking, Compass, Sun } from "lucide-react";
+import { useState } from "react";
+import { Building2, MapPin, Maximize, Phone, Calendar, Home, DollarSign, Layers, Shield, CircleParking, Compass, Sun, MessageSquare, Save, X } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
-import { useOfferedProperties } from "@/hooks/useOfferedProperties";
+import { useOfferedProperties, useUpdateAgentFeedback, OfferedProperty } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
 import { safeDateDisplay } from "@/lib/safeDate";
 import {
@@ -15,6 +16,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 interface BuyerDetailsDrawerProps {
   buyer: BuyerData | null;
@@ -272,7 +276,7 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
               ) : (
                 <div className="space-y-4">
                   {offeredProperties.map((offered) => (
-                    <OfferedPropertyCard key={offered.id} offered={offered} />
+                    <OfferedPropertyCard key={offered.id} offered={offered} buyerId={buyer.id} />
                   ))}
                 </div>
               )}
@@ -284,7 +288,12 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
   );
 }
 
-function OfferedPropertyCard({ offered }: { offered: any }) {
+function OfferedPropertyCard({ offered, buyerId }: { offered: OfferedProperty; buyerId: string }) {
+  const [showFeedbackInput, setShowFeedbackInput] = useState(false);
+  const [feedback, setFeedback] = useState(offered.agent_feedback || "");
+  const { toast } = useToast();
+  const updateFeedback = useUpdateAgentFeedback();
+  
   const property = offered.property;
   const primaryImage = property.images?.find((img: any) => img.is_primary) || property.images?.[0];
 
@@ -300,6 +309,27 @@ function OfferedPropertyCard({ offered }: { offered: any }) {
         return <Badge className="bg-blue-500">ביקר</Badge>;
       default:
         return <Badge variant="outline">{status || "הוצע"}</Badge>;
+    }
+  };
+
+  const handleSaveFeedback = async () => {
+    try {
+      await updateFeedback.mutateAsync({
+        offeredPropertyId: offered.id,
+        buyerId,
+        feedback,
+      });
+      toast({
+        title: "הערה נשמרה",
+        description: "הערת הסוכן נשמרה בהצלחה",
+      });
+      setShowFeedbackInput(false);
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "לא ניתן לשמור את ההערה",
+        variant: "destructive",
+      });
     }
   };
 
@@ -347,6 +377,76 @@ function OfferedPropertyCard({ offered }: { offered: any }) {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Agent Feedback Section */}
+      <div className="border-t border-border px-4 py-3 bg-muted/30">
+        {showFeedbackInput ? (
+          <div className="space-y-2">
+            <Textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="כתוב הערה פנימית על הנכס (למשל: הלקוח אהב את המיקום אבל לא אהב את המטבח הקטן)"
+              className="text-sm min-h-[80px] resize-none"
+              dir="rtl"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowFeedbackInput(false);
+                  setFeedback(offered.agent_feedback || "");
+                }}
+              >
+                <X className="h-4 w-4 ml-1" />
+                ביטול
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveFeedback}
+                disabled={updateFeedback.isPending}
+              >
+                {updateFeedback.isPending ? (
+                  <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 ml-1" />
+                )}
+                שמור
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {offered.agent_feedback ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3" />
+                  הערת סוכן:
+                </p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{offered.agent_feedback}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setShowFeedbackInput(true)}
+                >
+                  ערוך הערה
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs w-full justify-center"
+                onClick={() => setShowFeedbackInput(true)}
+              >
+                <MessageSquare className="h-4 w-4 ml-1" />
+                הוסף הערת סוכן
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
