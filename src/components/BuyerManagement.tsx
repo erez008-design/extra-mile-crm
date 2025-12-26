@@ -1498,6 +1498,7 @@ export const BuyerManagement = () => {
             initialFilters={{
               budget_min: selectedBuyer.budget_min ?? null,
               budget_max: selectedBuyer.budget_max ?? null,
+              target_budget: (selectedBuyer as any).target_budget ?? null,
               min_rooms: selectedBuyer.min_rooms ?? null,
               target_cities: selectedBuyer.target_cities ?? null,
               target_neighborhoods: selectedBuyer.target_neighborhoods ?? null,

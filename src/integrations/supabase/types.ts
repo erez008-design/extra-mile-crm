@@ -165,6 +165,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           required_features: string[] | null
+          target_budget: number | null
           target_cities: string[] | null
           target_neighborhoods: string[] | null
         }
@@ -184,6 +185,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           required_features?: string[] | null
+          target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
         }
@@ -203,6 +205,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           required_features?: string[] | null
+          target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
         }

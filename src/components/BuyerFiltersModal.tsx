@@ -10,10 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Filter, Save, X, MapPin } from "lucide-react";
 import { useNeighborhoods } from "@/hooks/useNeighborhoods";
+import { formatPrice } from "@/lib/formatPrice";
 
 interface BuyerFilters {
   budget_min: number | null;
   budget_max: number | null;
+  target_budget: number | null;
   min_rooms: number | null;
   target_cities: string[] | null;
   target_neighborhoods: string[] | null;
@@ -122,6 +124,7 @@ export const BuyerFiltersModal = ({
         .update({
           budget_min: filters.budget_min,
           budget_max: filters.budget_max,
+          target_budget: filters.target_budget,
           min_rooms: filters.min_rooms,
           target_cities: filters.target_cities,
           target_neighborhoods: filters.target_neighborhoods,
@@ -230,47 +233,33 @@ export const BuyerFiltersModal = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Budget Section */}
+          {/* Target Budget Section */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">1. תקציב (₪)</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="budget_min" className="text-sm text-muted-foreground">
-                  מינימום
-                </Label>
-                <Input
-                  id="budget_min"
-                  type="number"
-                  value={filters.budget_min || ""}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      budget_min: e.target.value ? Number(e.target.value) : null,
-                    })
-                  }
-                  placeholder="לדוגמה: 1500000"
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <Label htmlFor="budget_max" className="text-sm text-muted-foreground">
-                  מקסימום
-                </Label>
-                <Input
-                  id="budget_max"
-                  type="number"
-                  value={filters.budget_max || ""}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      budget_max: e.target.value ? Number(e.target.value) : null,
-                    })
-                  }
-                  placeholder="לדוגמה: 2500000"
-                  dir="ltr"
-                />
-              </div>
+            <Label className="text-base font-semibold">1. תקציב יעד (₪)</Label>
+            <div className="max-w-xs">
+              <Input
+                id="target_budget"
+                type="number"
+                value={filters.target_budget || ""}
+                onChange={(e) => {
+                  const value = e.target.value ? Number(e.target.value) : null;
+                  setFilters({
+                    ...filters,
+                    target_budget: value,
+                    // Auto-calculate ±20% range
+                    budget_min: value ? Math.round(value * 0.8) : null,
+                    budget_max: value ? Math.round(value * 1.2) : null,
+                  });
+                }}
+                placeholder="לדוגמה: 2000000"
+                dir="ltr"
+              />
             </div>
+            {filters.target_budget && (
+              <p className="text-sm text-muted-foreground">
+                טווח חיפוש: {formatPrice(Math.round(filters.target_budget * 0.8))} - {formatPrice(Math.round(filters.target_budget * 1.2))}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               * המערכת תחפש בטווח גמיש של ±20% מהתקציב שהוגדר
             </p>
