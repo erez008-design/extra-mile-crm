@@ -370,6 +370,41 @@ ${propertiesSummary.map((p, i) => `${i + 1}. [ID: ${p.id}] ${p.summary}`).join("
       } else {
         console.log(`Saved ${matchRecords.length} matches to database for buyer ${buyerId}`);
       }
+
+      // Create notifications for high-score matches (70%+)
+      const highScoreMatches = enrichedMatches.filter(m => m.match_score >= 70);
+      
+      if (highScoreMatches.length > 0) {
+        // Get the agent for this buyer
+        const { data: buyerAgent } = await supabase
+          .from("buyer_agents")
+          .select("agent_id")
+          .eq("buyer_id", buyerId)
+          .limit(1)
+          .single();
+
+        if (buyerAgent?.agent_id) {
+          const notificationRecords = highScoreMatches.map(m => ({
+            buyer_id: buyerId,
+            agent_id: buyerAgent.agent_id,
+            property_id: m.property_id,
+            match_score: m.match_score,
+            match_reason: m.match_reason,
+            is_read_by_agent: false,
+            is_read_by_manager: false,
+          }));
+
+          const { error: notifError } = await supabase
+            .from("notifications")
+            .insert(notificationRecords);
+
+          if (notifError) {
+            console.error("Error creating notifications:", notifError);
+          } else {
+            console.log(`Created ${notificationRecords.length} notifications for high-score matches`);
+          }
+        }
+      }
     }
 
     return new Response(

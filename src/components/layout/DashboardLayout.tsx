@@ -1,10 +1,12 @@
 import { ReactNode, useState } from "react";
-import { Menu, X, Home, Building2, Users, Settings, LogOut } from "lucide-react";
+import { Menu, X, Home, Building2, Users, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -22,6 +24,7 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { isManager } = useUserRole();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -32,6 +35,11 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
     if (href === "/") return location.pathname === "/";
     return location.pathname.startsWith(href);
   };
+
+  // Add manager dashboard to nav if user is manager
+  const allNavItems = isManager 
+    ? [...navItems, { label: "מנהל", href: "/manager/dashboard", icon: LayoutDashboard }]
+    : navItems;
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
@@ -52,7 +60,7 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-1">
-                {navItems.map((item) => (
+                {allNavItems.map((item) => (
                   <Button
                     key={item.href}
                     variant={isActive(item.href) ? "default" : "ghost"}
@@ -64,6 +72,7 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
                     {item.label}
                   </Button>
                 ))}
+                <NotificationBell />
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive">
                   <LogOut className="w-4 h-4" />
                   יציאה
@@ -88,7 +97,7 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
 
                     {/* Mobile Navigation Items */}
                     <nav className="flex-1 p-4 space-y-2">
-                      {navItems.map((item) => (
+                      {allNavItems.map((item) => (
                         <Button
                           key={item.href}
                           variant={isActive(item.href) ? "default" : "ghost"}
