@@ -1,4 +1,4 @@
-import { Building2, MapPin, Maximize, Phone, User, Calendar, Sparkles } from "lucide-react";
+import { Building2, MapPin, Maximize, Phone, Calendar, Home, DollarSign, Layers, Shield, CircleParking, Compass, Sun } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
 import { useOfferedProperties } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
@@ -10,7 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
@@ -22,10 +22,38 @@ interface BuyerDetailsDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const FEATURE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
+  has_safe_room: { label: "ממ\"ד", icon: <Shield className="h-4 w-4" /> },
+  has_elevator: { label: "מעלית", icon: <Layers className="h-4 w-4" /> },
+  has_sun_balcony: { label: "מרפסת שמש", icon: <Sun className="h-4 w-4" /> },
+  parking_spots: { label: "חניה", icon: <CircleParking className="h-4 w-4" /> },
+};
+
 export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDrawerProps) {
   const { data: offeredProperties = [], isLoading } = useOfferedProperties(open ? buyer?.id ?? null : null);
 
   if (!buyer) return null;
+
+  // Calculate budget range for display (±20% from target_budget)
+  const getBudgetDisplay = () => {
+    if (buyer.target_budget) {
+      const min = Math.round(buyer.target_budget * 0.8);
+      const max = Math.round(buyer.target_budget * 1.2);
+      return {
+        target: formatPrice(buyer.target_budget),
+        range: `${formatPrice(min)} - ${formatPrice(max)}`,
+      };
+    }
+    if (buyer.budget_min || buyer.budget_max) {
+      return {
+        target: null,
+        range: `${formatPrice(buyer.budget_min)} - ${formatPrice(buyer.budget_max)}`,
+      };
+    }
+    return null;
+  };
+
+  const budgetDisplay = getBudgetDisplay();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -59,7 +87,7 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
               value="details"
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
             >
-              פרטים
+              דרישות חיפוש
             </TabsTrigger>
             <TabsTrigger
               value="offered"
@@ -72,93 +100,155 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
           <TabsContent value="details" className="mt-0">
             <ScrollArea className="h-[calc(100vh-200px)] p-6">
               <div className="space-y-6">
-                {/* Budget */}
-                <div>
-                  <h4 className="text-sm font-medium text-muted-foreground mb-2">תקציב</h4>
-                  <p className="text-lg font-semibold">
-                    {buyer.budget_min || buyer.budget_max
-                      ? `${formatPrice(buyer.budget_min)} - ${formatPrice(buyer.budget_max)}`
-                      : "לא צוין"}
-                  </p>
-                </div>
-
-                {/* Rooms */}
-                {buyer.min_rooms && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">חדרים</h4>
-                    <p className="text-lg font-semibold">{buyer.min_rooms}+</p>
-                  </div>
-                )}
-
-                {/* Floor */}
-                {(buyer.floor_min !== null || buyer.floor_max !== null) && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">קומה</h4>
-                    <p className="text-lg font-semibold">
-                      {buyer.floor_min !== null ? buyer.floor_min : "0"} - {buyer.floor_max !== null ? buyer.floor_max : "∞"}
-                    </p>
-                  </div>
-                )}
-
-                {/* Target Cities */}
-                {buyer.target_cities && buyer.target_cities.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">ערים</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {buyer.target_cities.map((city) => (
-                        <Badge key={city} variant="secondary">
-                          {city}
-                        </Badge>
-                      ))}
+                {/* Search Requirements Card */}
+                <Card className="border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Compass className="h-5 w-5 text-primary" />
+                      דרישות חיפוש
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Budget */}
+                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <DollarSign className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">תקציב</p>
+                        {budgetDisplay ? (
+                          <div>
+                            {budgetDisplay.target && (
+                              <p className="text-lg font-bold text-foreground">
+                                {budgetDisplay.target}
+                              </p>
+                            )}
+                            <p className="text-sm text-muted-foreground">
+                              טווח חיפוש: {budgetDisplay.range}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">לא צוין</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                {/* Target Neighborhoods */}
-                {buyer.target_neighborhoods && buyer.target_neighborhoods.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">שכונות</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {buyer.target_neighborhoods.map((neighborhood) => (
-                        <Badge key={neighborhood} variant="outline">
-                          {neighborhood}
-                        </Badge>
-                      ))}
+                    {/* Rooms */}
+                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <Home className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground">מינימום חדרים</p>
+                        <p className="text-lg font-bold text-foreground">
+                          {buyer.min_rooms ? `${buyer.min_rooms}+` : "לא צוין"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
 
-                {/* Required Features */}
-                {buyer.required_features && buyer.required_features.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">דרישות מיוחדות</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {buyer.required_features.map((feature) => (
-                        <Badge key={feature} className="bg-accent/20 text-accent">
-                          {feature}
-                        </Badge>
-                      ))}
+                    {/* Floor */}
+                    {(buyer.floor_min !== null || buyer.floor_max !== null) && (
+                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                        <Layers className="h-5 w-5 text-primary mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-muted-foreground">קומה</p>
+                          <p className="text-lg font-bold text-foreground">
+                            {buyer.floor_min ?? 0} - {buyer.floor_max ?? "∞"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Must-Have Features Card */}
+                <Card className="border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">דרישות חובה (Must-Have)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(FEATURE_LABELS).map(([key, { label, icon }]) => {
+                        const isRequired = buyer.required_features?.includes(key);
+                        return (
+                          <div
+                            key={key}
+                            className={`flex items-center gap-2 p-3 rounded-lg border transition-colors ${
+                              isRequired
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "bg-muted/30 border-border text-muted-foreground"
+                            }`}
+                          >
+                            {icon}
+                            <span className="text-sm font-medium">{label}</span>
+                            {isRequired && (
+                              <Badge variant="secondary" className="mr-auto text-xs">
+                                חובה
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+
+                {/* Location Card */}
+                {((buyer.target_cities && buyer.target_cities.length > 0) ||
+                  (buyer.target_neighborhoods && buyer.target_neighborhoods.length > 0)) && (
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-primary" />
+                        מיקום רצוי
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Cities */}
+                      {buyer.target_cities && buyer.target_cities.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">ערים</p>
+                          <div className="flex flex-wrap gap-2">
+                            {buyer.target_cities.map((city) => (
+                              <Badge key={city} variant="secondary">
+                                {city}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Neighborhoods */}
+                      {buyer.target_neighborhoods && buyer.target_neighborhoods.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground mb-2">שכונות</p>
+                          <div className="flex flex-wrap gap-2">
+                            {buyer.target_neighborhoods.map((neighborhood) => (
+                              <Badge key={neighborhood} variant="outline">
+                                {neighborhood}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Notes */}
                 {buyer.notes && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">הערות</h4>
-                    <p className="text-sm text-foreground">{buyer.notes}</p>
-                  </div>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">הערות</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{buyer.notes}</p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Created at */}
                 {buyer.created_at && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">נוצר בתאריך</h4>
-                    <p className="flex items-center gap-1 text-sm text-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {safeDateDisplay(buyer.created_at, (d) => format(d, "dd/MM/yyyy"))}
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    נוצר: {safeDateDisplay(buyer.created_at, (d) => format(d, "dd/MM/yyyy"))}
+                  </p>
                 )}
               </div>
             </ScrollArea>

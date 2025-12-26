@@ -7,6 +7,7 @@ export interface BuyerData {
   phone: string | null;
   budget_min: number | null;
   budget_max: number | null;
+  target_budget: number | null;
   target_cities: string[] | null;
   target_neighborhoods: string[] | null;
   min_rooms: number | null;
