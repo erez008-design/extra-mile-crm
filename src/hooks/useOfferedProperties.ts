@@ -7,6 +7,7 @@ export interface OfferedProperty {
   buyer_id: string;
   status: string | null;
   note: string | null;
+  agent_feedback: string | null;
   updated_at: string | null;
   property: {
     id: string;
@@ -34,6 +35,7 @@ export function useOfferedProperties(buyerId: string | null) {
           buyer_id,
           status,
           note,
+          agent_feedback,
           updated_at,
           property:properties!buyer_properties_property_id_fkey (
             id,
@@ -111,6 +113,25 @@ export function useDeleteBuyer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["buyers"] });
+    },
+  });
+}
+
+export function useUpdateAgentFeedback() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ offeredPropertyId, buyerId, feedback }: { offeredPropertyId: string; buyerId: string; feedback: string }) => {
+      const { error } = await supabase
+        .from("buyer_properties")
+        .update({ agent_feedback: feedback })
+        .eq("id", offeredPropertyId);
+
+      if (error) throw error;
+      return { buyerId };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["offeredProperties", data.buyerId] });
     },
   });
 }
