@@ -42,17 +42,17 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
     : navItems;
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
+    <div className="min-h-screen-safe bg-background" dir="rtl">
       {showNav && (
-        <header className="border-b bg-card shadow-soft sticky top-0 z-50">
-          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <header className="border-b bg-card shadow-soft sticky top-0 z-50 safe-top">
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 safe-x">
             <div className="flex items-center justify-between">
               {/* Logo */}
               <div className="flex items-center gap-2 sm:gap-3">
                 <img 
                   src={extraMileLogo} 
                   alt="EXTRAMILE" 
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover cursor-pointer" 
+                  className="w-10 h-10 sm:w-10 sm:h-10 rounded-lg object-cover cursor-pointer touch-target" 
                   onClick={() => navigate("/")}
                 />
                 <span className="font-semibold text-base sm:text-lg hidden sm:inline">EXTRAMILE</span>
@@ -66,75 +66,78 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
                     variant={isActive(item.href) ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate(item.href)}
-                    className="gap-2"
+                    className="gap-2 touch-target"
                   >
                     <item.icon className="w-4 h-4" />
                     {item.label}
                   </Button>
                 ))}
                 <NotificationBell />
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive">
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive touch-target">
                   <LogOut className="w-4 h-4" />
                   יציאה
                 </Button>
               </nav>
 
-              {/* Mobile Hamburger Menu */}
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon" className="h-10 w-10">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">פתח תפריט</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-72 p-0" dir="rtl">
-                  <div className="flex flex-col h-full">
-                    {/* Mobile Menu Header */}
-                    <div className="flex items-center gap-3 p-4 border-b">
-                      <img src={extraMileLogo} alt="EXTRAMILE" className="w-10 h-10 rounded-lg object-cover" />
-                      <span className="font-semibold text-lg">EXTRAMILE</span>
-                    </div>
+              {/* Mobile Navigation Icons */}
+              <div className="flex md:hidden items-center gap-2">
+                <NotificationBell />
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-11 w-11 touch-target">
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">פתח תפריט</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-72 p-0 safe-top safe-bottom" dir="rtl">
+                    <div className="flex flex-col h-full">
+                      {/* Mobile Menu Header */}
+                      <div className="flex items-center gap-3 p-4 border-b">
+                        <img src={extraMileLogo} alt="EXTRAMILE" className="w-10 h-10 rounded-lg object-cover" />
+                        <span className="font-semibold text-lg">EXTRAMILE</span>
+                      </div>
 
-                    {/* Mobile Navigation Items */}
-                    <nav className="flex-1 p-4 space-y-2">
-                      {allNavItems.map((item) => (
-                        <Button
-                          key={item.href}
-                          variant={isActive(item.href) ? "default" : "ghost"}
-                          className="w-full justify-start gap-3 h-12 text-base"
+                      {/* Mobile Navigation Items */}
+                      <nav className="flex-1 p-4 space-y-2 ios-scroll overflow-y-auto">
+                        {allNavItems.map((item) => (
+                          <Button
+                            key={item.href}
+                            variant={isActive(item.href) ? "default" : "ghost"}
+                            className="w-full justify-start gap-3 h-12 text-base touch-target"
+                            onClick={() => {
+                              navigate(item.href);
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <item.icon className="w-5 h-5" />
+                            {item.label}
+                          </Button>
+                        ))}
+                      </nav>
+
+                      {/* Mobile Logout */}
+                      <div className="p-4 border-t safe-bottom">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start gap-3 h-12 text-base text-destructive hover:text-destructive touch-target"
                           onClick={() => {
-                            navigate(item.href);
+                            handleLogout();
                             setMobileMenuOpen(false);
                           }}
                         >
-                          <item.icon className="w-5 h-5" />
-                          {item.label}
+                          <LogOut className="w-5 h-5" />
+                          יציאה
                         </Button>
-                      ))}
-                    </nav>
-
-                    {/* Mobile Logout */}
-                    <div className="p-4 border-t">
-                      <Button 
-                        variant="ghost" 
-                        className="w-full justify-start gap-3 h-12 text-base text-destructive hover:text-destructive"
-                        onClick={() => {
-                          handleLogout();
-                          setMobileMenuOpen(false);
-                        }}
-                      >
-                        <LogOut className="w-5 h-5" />
-                        יציאה
-                      </Button>
+                      </div>
                     </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </div>
         </header>
       )}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 safe-x safe-bottom">
         {children}
       </main>
     </div>

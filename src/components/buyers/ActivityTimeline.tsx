@@ -106,9 +106,9 @@ export function ActivityTimeline({ buyerId }: ActivityTimelineProps) {
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-280px)] pr-2">
+    <ScrollArea className="h-[calc(100dvh-280px)] pr-2 ios-scroll">
       <div className="space-y-0">
-        {activities.map((activity, index) => (
+        {activities.map((activity) => (
           <ActivityItem 
             key={activity.id} 
             activity={activity} 
