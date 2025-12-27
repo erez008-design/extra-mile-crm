@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["activity_action_type"]
+          agent_id: string | null
+          buyer_id: string | null
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["activity_action_type"]
+          agent_id?: string | null
+          buyer_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["activity_action_type"]
+          agent_id?: string | null
+          buyer_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_neighborhood_additions: {
         Row: {
           city_name: string
@@ -852,6 +890,14 @@ export type Database = {
       }
     }
     Enums: {
+      activity_action_type:
+        | "property_offered"
+        | "note_added"
+        | "feedback_added"
+        | "link_viewed"
+        | "status_changed"
+        | "buyer_created"
+        | "match_found"
       app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
@@ -980,6 +1026,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_action_type: [
+        "property_offered",
+        "note_added",
+        "feedback_added",
+        "link_viewed",
+        "status_changed",
+        "buyer_created",
+        "match_found",
+      ],
       app_role: ["admin", "agent", "client", "manager"],
     },
   },
