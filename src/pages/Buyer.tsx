@@ -15,7 +15,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Heart, MessageCircle, Eye, EyeOff, Calendar, FileText, Wrench, Save, X, AlertCircle, GitCompare } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Eye,
+  EyeOff,
+  Calendar,
+  FileText,
+  Wrench,
+  Save,
+  X,
+  AlertCircle,
+  GitCompare,
+} from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { MortgageCalculator } from "@/components/MortgageCalculator";
@@ -58,19 +70,19 @@ interface BuyerProperty {
 // Map Hebrew display labels to English database values
 // DB constraint only allows: offered, interested, seen, not_interested, want_to_see, offered_price
 const STATUS_MAP: Record<string, string> = {
-  "הוצע": "offered",
-  "נראה": "seen",
-  "אהבתי": "interested",
+  הוצע: "offered",
+  נראה: "seen",
+  אהבתי: "interested",
   "לא מעוניין": "not_interested",
   "רוצה לראות": "want_to_see",
   "הצעתי מחיר": "offered_price",
   // Also map English values to themselves for existing data
-  "offered": "offered",
-  "seen": "seen",
-  "interested": "interested",
-  "not_interested": "not_interested",
-  "want_to_see": "want_to_see",
-  "offered_price": "offered_price",
+  offered: "offered",
+  seen: "seen",
+  interested: "interested",
+  not_interested: "not_interested",
+  want_to_see: "want_to_see",
+  offered_price: "offered_price",
 };
 
 const Buyer = () => {
@@ -102,15 +114,14 @@ const Buyer = () => {
 
   const fetchBuyerData = async () => {
     setLoading(true);
-    
+
     try {
       // Fetch buyer info
       const { data: buyerData, error: buyerError } = await supabase
         .from("buyers")
         .select("*")
         .eq("id", buyerId)
-        .single();
-
+        .maybeSingle();
       if (buyerError) {
         console.error("Error fetching buyer:", buyerError);
         toast.error("שגיאה בטעינת פרטי הקונה");
@@ -122,13 +133,15 @@ const Buyer = () => {
       // Fetch buyer properties with property details
       const { data: propertiesData, error: propertiesError } = await supabase
         .from("buyer_properties")
-        .select(`
+        .select(
+          `
           *,
           properties (
             *,
             property_images (url, is_primary)
           )
-        `)
+        `,
+        )
         .eq("buyer_id", buyerId)
         .order("updated_at", { ascending: false });
 
@@ -150,7 +163,7 @@ const Buyer = () => {
   const updatePropertyStatus = async (buyerPropertyId: string, newStatus: string) => {
     const dbStatus = STATUS_MAP[newStatus] || newStatus;
     console.log("Updating status:", { buyerPropertyId, newStatus, dbStatus });
-    
+
     // Use secure RPC function to update - validates buyer_id matches
     const { data, error } = await supabase.rpc("update_buyer_property", {
       p_id: buyerPropertyId,
@@ -175,10 +188,7 @@ const Buyer = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from("buyer_properties")
-      .update({ note: noteText })
-      .eq("id", selectedProperty.id);
+    const { error } = await supabase.from("buyer_properties").update({ note: noteText }).eq("id", selectedProperty.id);
 
     if (error) {
       toast.error("שגיאה בשמירת ההערה");
@@ -199,20 +209,18 @@ const Buyer = () => {
 
     // Get agent_id from the first buyer_property
     const agentId = buyerProperties[0]?.agent_id;
-    
+
     if (!agentId) {
       toast.error("לא נמצא סוכן");
       return;
     }
 
-    const { error } = await supabase
-      .from("buyer_messages")
-      .insert({
-        buyer_id: buyerId,
-        agent_id: agentId,
-        property_id: selectedProperty?.property_id || null,
-        message: messageText,
-      });
+    const { error } = await supabase.from("buyer_messages").insert({
+      buyer_id: buyerId,
+      agent_id: agentId,
+      property_id: selectedProperty?.property_id || null,
+      message: messageText,
+    });
 
     if (error) {
       toast.error("שגיאה בשליחת ההודעה");
@@ -237,18 +245,18 @@ const Buyer = () => {
   };
 
   const updateInsightsForm = (propertyId: string, field: keyof InsightsFormData, value: string) => {
-    setInsightsForms(prev => ({
+    setInsightsForms((prev) => ({
       ...prev,
       [propertyId]: {
         ...getOrInitForm({ id: propertyId } as BuyerProperty),
         ...prev[propertyId],
         [field]: value,
-      }
+      },
     }));
   };
 
   const cancelInsights = (buyerPropertyId: string) => {
-    setInsightsForms(prev => {
+    setInsightsForms((prev) => {
       const newForms = { ...prev };
       delete newForms[buyerPropertyId];
       return newForms;
@@ -259,7 +267,7 @@ const Buyer = () => {
   const hasUnsavedChanges = (buyerProperty: BuyerProperty): boolean => {
     const form = insightsForms[buyerProperty.id];
     if (!form) return false;
-    
+
     return (
       form.status !== (buyerProperty.status || "offered") ||
       form.not_interested_reason !== (buyerProperty.not_interested_reason || "") ||
@@ -270,14 +278,14 @@ const Buyer = () => {
 
   const initFormIfNeeded = (buyerProperty: BuyerProperty) => {
     if (!insightsForms[buyerProperty.id]) {
-      setInsightsForms(prev => ({
+      setInsightsForms((prev) => ({
         ...prev,
         [buyerProperty.id]: {
           status: buyerProperty.status || "offered",
           not_interested_reason: buyerProperty.not_interested_reason || "",
           liked_text: buyerProperty.liked_text || "",
           disliked_text: buyerProperty.disliked_text || "",
-        }
+        },
       }));
     }
   };
@@ -288,7 +296,7 @@ const Buyer = () => {
       toast.error("אין נתונים לשמירה");
       return;
     }
-    
+
     // DIAGNOSTIC LOGS - DO NOT REMOVE UNTIL ROOT CAUSE IS IDENTIFIED
     console.log("========== STATUS DEBUG ==========");
     console.log("RAW FORM STATUS:", form.status);
@@ -296,21 +304,21 @@ const Buyer = () => {
     console.log("STATUS_MAP keys:", Object.keys(STATUS_MAP));
     console.log("STATUS_MAP values:", Object.values(STATUS_MAP));
     console.log("===================================");
-    
+
     // Valid database statuses - ONLY these are allowed by DB constraint
     const validStatuses = ["offered", "seen", "interested", "not_interested", "want_to_see", "offered_price"];
-    
+
     // Try to map the status
     let dbStatus = STATUS_MAP[form.status];
-    
+
     // If not found in map, check if it's already a valid English status
     if (!dbStatus && validStatuses.includes(form.status)) {
       dbStatus = form.status;
     }
-    
+
     console.log("FINAL STATUS BEFORE SAVE:", dbStatus);
     console.log("Is valid?:", validStatuses.includes(dbStatus || ""));
-    
+
     // NO FALLBACK - let it fail so we can see the real invalid value
     if (!dbStatus || !validStatuses.includes(dbStatus)) {
       console.error("INVALID STATUS DETECTED - NO FALLBACK APPLIED");
@@ -319,10 +327,10 @@ const Buyer = () => {
       toast.error(`סטטוס לא תקין: "${form.status}" -> "${dbStatus}"`);
       return;
     }
-    
+
     console.log("Saving insights for buyerPropertyId:", buyerPropertyId);
     console.log("Form data:", form, "-> dbStatus:", dbStatus);
-    
+
     // Use secure RPC function to update - validates buyer_id matches
     const { data, error } = await supabase.rpc("update_buyer_property", {
       p_id: buyerPropertyId,
@@ -343,7 +351,7 @@ const Buyer = () => {
     } else {
       toast.success("✔ נשמר למסד הנתונים: התובנות נשמרו בהצלחה");
       // Clear the form for this property after saving
-      setInsightsForms(prev => {
+      setInsightsForms((prev) => {
         const newForms = { ...prev };
         delete newForms[buyerPropertyId];
         return newForms;
@@ -392,9 +400,9 @@ const Buyer = () => {
     const unsaved = hasUnsavedChanges(buyerProperty);
 
     const isSelectedForCompare = selectedForCompare.has(buyerProperty.property_id);
-    
+
     const toggleCompareSelection = () => {
-      setSelectedForCompare(prev => {
+      setSelectedForCompare((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(buyerProperty.property_id)) {
           newSet.delete(buyerProperty.property_id);
@@ -408,23 +416,28 @@ const Buyer = () => {
     };
 
     return (
-      <Card key={buyerProperty.id} className={`overflow-hidden relative ${isSelectedForCompare ? 'ring-2 ring-primary' : ''}`}>
+      <Card
+        key={buyerProperty.id}
+        className={`overflow-hidden relative ${isSelectedForCompare ? "ring-2 ring-primary" : ""}`}
+      >
         {/* Compare Icon - Top Right of Card */}
-        <div 
-          onClick={(e) => { e.stopPropagation(); toggleCompareSelection(); }}
-          className={`absolute top-3 right-3 z-20 p-2 rounded-lg cursor-pointer transition-all shadow-md ${isSelectedForCompare ? 'bg-primary text-primary-foreground scale-110' : 'bg-black/60 text-white hover:bg-black/80'}`}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCompareSelection();
+          }}
+          className={`absolute top-3 right-3 z-20 p-2 rounded-lg cursor-pointer transition-all shadow-md ${isSelectedForCompare ? "bg-primary text-primary-foreground scale-110" : "bg-black/60 text-white hover:bg-black/80"}`}
           title="השוואה"
         >
           <GitCompare className="w-5 h-5" />
         </div>
         {/* Image Gallery */}
         {sortedImages.length > 0 && (
-          <div className="relative" onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}>
-            <img 
-              src={currentImage} 
-              alt={property.address} 
-              className="w-full h-48 object-cover"
-            />
+          <div
+            className="relative"
+            onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
+          >
+            <img src={currentImage} alt={property.address} className="w-full h-48 object-cover" />
             {/* Image navigation dots */}
             {sortedImages.length > 1 && (
               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
@@ -433,12 +446,10 @@ const Buyer = () => {
                     key={idx}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedImages(prev => ({ ...prev, [buyerProperty.id]: idx }));
+                      setSelectedImages((prev) => ({ ...prev, [buyerProperty.id]: idx }));
                     }}
                     className={`w-2 h-2 rounded-full transition-all ${
-                      selectedImageIndex === idx 
-                        ? "bg-primary w-4" 
-                        : "bg-white/70 hover:bg-white"
+                      selectedImageIndex === idx ? "bg-primary w-4" : "bg-white/70 hover:bg-white"
                     }`}
                     aria-label={`תמונה ${idx + 1}`}
                   />
@@ -457,9 +468,9 @@ const Buyer = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedImages(prev => ({
+                    setSelectedImages((prev) => ({
                       ...prev,
-                      [buyerProperty.id]: selectedImageIndex > 0 ? selectedImageIndex - 1 : sortedImages.length - 1
+                      [buyerProperty.id]: selectedImageIndex > 0 ? selectedImageIndex - 1 : sortedImages.length - 1,
                     }));
                   }}
                   className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition-colors"
@@ -472,9 +483,9 @@ const Buyer = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedImages(prev => ({
+                    setSelectedImages((prev) => ({
                       ...prev,
-                      [buyerProperty.id]: selectedImageIndex < sortedImages.length - 1 ? selectedImageIndex + 1 : 0
+                      [buyerProperty.id]: selectedImageIndex < sortedImages.length - 1 ? selectedImageIndex + 1 : 0,
                     }));
                   }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition-colors"
@@ -496,19 +507,20 @@ const Buyer = () => {
             </div>
             {getStatusBadge(buyerProperty.status)}
           </div>
-          
+
           <div className="flex gap-4 text-sm text-muted-foreground mb-3">
             {property.rooms && <span>{property.rooms} חדרים</span>}
             {property.size_sqm && <span>{property.size_sqm} מ״ר</span>}
-            <span className="font-semibold text-foreground">
-              ₪{property.price.toLocaleString()}
-            </span>
+            <span className="font-semibold text-foreground">₪{property.price.toLocaleString()}</span>
           </div>
 
           {buyerProperty.visited_at && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
               <Calendar className="w-4 h-4" />
-              <span>נראה בתאריך: {safeDateDisplay(buyerProperty.visited_at, (d) => format(d, "d MMMM yyyy", { locale: he }))}</span>
+              <span>
+                נראה בתאריך:{" "}
+                {safeDateDisplay(buyerProperty.visited_at, (d) => format(d, "d MMMM yyyy", { locale: he }))}
+              </span>
             </div>
           )}
 
@@ -521,7 +533,9 @@ const Buyer = () => {
           {/* Documents section removed - no FK relationship in DB */}
 
           {/* Property Insights Form */}
-          <Card className={`border-2 mb-3 ${unsaved ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : 'border-primary/20'}`}>
+          <Card
+            className={`border-2 mb-3 ${unsaved ? "border-orange-400 bg-orange-50/50 dark:bg-orange-950/20" : "border-primary/20"}`}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -548,7 +562,7 @@ const Buyer = () => {
                   <SelectTrigger id={`status-${buyerProperty.id}`}>
                     <SelectValue placeholder="בחר סטטוס" />
                   </SelectTrigger>
-                <SelectContent>
+                  <SelectContent>
                     <SelectItem value="offered">הוצע</SelectItem>
                     <SelectItem value="seen">נראה</SelectItem>
                     <SelectItem value="interested">אהבתי</SelectItem>
@@ -603,19 +617,11 @@ const Buyer = () => {
 
               {isEditing && (
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => saveInsights(buyerProperty.id)}
-                    className="flex-1"
-                    size="sm"
-                  >
+                  <Button onClick={() => saveInsights(buyerProperty.id)} className="flex-1" size="sm">
                     <Save className="w-4 h-4 ml-2" />
                     שמור תובנות
                   </Button>
-                  <Button
-                    onClick={() => cancelInsights(buyerProperty.id)}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={() => cancelInsights(buyerProperty.id)} variant="outline" size="sm">
                     <X className="w-4 h-4 ml-2" />
                     ביטול
                   </Button>
@@ -625,34 +631,25 @@ const Buyer = () => {
           </Card>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => updatePropertyStatus(buyerProperty.id, "seen")}
-            >
+            <Button size="sm" variant="outline" onClick={() => updatePropertyStatus(buyerProperty.id, "seen")}>
               <Eye className="w-4 h-4 ml-2" />
               נראה
             </Button>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => updatePropertyStatus(buyerProperty.id, "interested")}
-            >
+            <Button size="sm" variant="default" onClick={() => updatePropertyStatus(buyerProperty.id, "interested")}>
               <Heart className="w-4 h-4 ml-2" />
               אהבתי
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => updatePropertyStatus(buyerProperty.id, "not_interested")}
-            >
+            <Button size="sm" variant="ghost" onClick={() => updatePropertyStatus(buyerProperty.id, "not_interested")}>
               <EyeOff className="w-4 h-4 ml-2" />
               לא מעוניין
             </Button>
             <Button
               size="sm"
               variant={isSelectedForCompare ? "default" : "outline"}
-              onClick={(e) => { e.stopPropagation(); toggleCompareSelection(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCompareSelection();
+              }}
               title="השוואה"
             >
               <GitCompare className="w-4 h-4 ml-2" />
@@ -713,9 +710,7 @@ const Buyer = () => {
           <div className="flex items-center gap-3">
             <img src={extraMileLogo} alt="EXTRAMILE" className="w-12 h-12 rounded-lg object-cover" />
             <div>
-              <h1 className="text-xl font-bold">
-                {buyer?.full_name ? `שלום, ${buyer.full_name}` : "הבית שלי"}
-              </h1>
+              <h1 className="text-xl font-bold">{buyer?.full_name ? `שלום, ${buyer.full_name}` : "הבית שלי"}</h1>
               <p className="text-sm text-muted-foreground">EXTRAMILE קשרי נדל"ן</p>
             </div>
           </div>
@@ -756,11 +751,24 @@ const Buyer = () => {
           {/* Horizontally scrollable tabs for mobile */}
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-6 gap-1 h-auto flex-nowrap">
-              <TabsTrigger value="all" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">הכל ({buyerProperties.length})</TabsTrigger>
-              <TabsTrigger value="offered" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">הוצעו ({grouped.offered.length})</TabsTrigger>
-              <TabsTrigger value="seen" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">נראה ({grouped.seen.length})</TabsTrigger>
-              <TabsTrigger value="interested" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">אהבתי ({grouped.interested.length})</TabsTrigger>
-              <TabsTrigger value="not_interested" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">לא מעוניין ({grouped.not_interested.length})</TabsTrigger>
+              <TabsTrigger value="all" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                הכל ({buyerProperties.length})
+              </TabsTrigger>
+              <TabsTrigger value="offered" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                הוצעו ({grouped.offered.length})
+              </TabsTrigger>
+              <TabsTrigger value="seen" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                נראה ({grouped.seen.length})
+              </TabsTrigger>
+              <TabsTrigger value="interested" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                אהבתי ({grouped.interested.length})
+              </TabsTrigger>
+              <TabsTrigger
+                value="not_interested"
+                className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap"
+              >
+                לא מעוניין ({grouped.not_interested.length})
+              </TabsTrigger>
               <TabsTrigger value="tools" className="flex-shrink-0 px-3 py-2">
                 <Wrench className="w-4 h-4" />
               </TabsTrigger>
@@ -773,28 +781,20 @@ const Buyer = () => {
                 <p className="text-center text-muted-foreground">עדיין לא הוצעו לך נכסים</p>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {buyerProperties.map(renderPropertyCard)}
-              </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{buyerProperties.map(renderPropertyCard)}</div>
             )}
           </TabsContent>
 
           <TabsContent value="offered" className="space-y-4 mt-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {grouped.offered.map(renderPropertyCard)}
-            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{grouped.offered.map(renderPropertyCard)}</div>
           </TabsContent>
 
           <TabsContent value="seen" className="space-y-4 mt-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {grouped.seen.map(renderPropertyCard)}
-            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{grouped.seen.map(renderPropertyCard)}</div>
           </TabsContent>
 
           <TabsContent value="interested" className="space-y-4 mt-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {grouped.interested.map(renderPropertyCard)}
-            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{grouped.interested.map(renderPropertyCard)}</div>
           </TabsContent>
 
           <TabsContent value="not_interested" className="space-y-4 mt-4">
@@ -831,9 +831,11 @@ const Buyer = () => {
         {/* Floating Compare Button */}
         {selectedForCompare.size >= 2 && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-            <Button 
-              size="lg" 
-              onClick={() => navigate(`/compare?buyerId=${buyerId}&properties=${Array.from(selectedForCompare).join(',')}`)}
+            <Button
+              size="lg"
+              onClick={() =>
+                navigate(`/compare?buyerId=${buyerId}&properties=${Array.from(selectedForCompare).join(",")}`)
+              }
               className="shadow-lg"
             >
               <GitCompare className="w-5 h-5 ml-2" />
