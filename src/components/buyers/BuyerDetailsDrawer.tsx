@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, MapPin, Maximize, Phone, Calendar, Home, DollarSign, Layers, Shield, CircleParking, Compass, Sun, MessageSquare, Save, X } from "lucide-react";
+import { Building2, MapPin, Maximize, Phone, Calendar, Home, DollarSign, Layers, Shield, CircleParking, Compass, Sun, MessageSquare, Save, X, History } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
 import { useOfferedProperties, useUpdateAgentFeedback, OfferedProperty } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { ActivityTimeline } from "./ActivityTimeline";
 
 interface BuyerDetailsDrawerProps {
   buyer: BuyerData | null;
@@ -98,6 +99,13 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
               className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
             >
               נכסים שהוצעו ({offeredProperties.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
+            >
+              <History className="h-4 w-4 ml-1" />
+              פעילות
             </TabsTrigger>
           </TabsList>
 
@@ -281,6 +289,12 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
                 </div>
               )}
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-0">
+            <div className="p-6">
+              <ActivityTimeline buyerId={buyer.id} />
+            </div>
           </TabsContent>
         </Tabs>
       </SheetContent>
