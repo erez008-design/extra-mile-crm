@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2, Link } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useBuyers, BuyerData } from "@/hooks/useBuyers";
 import { useDeleteBuyer } from "@/hooks/useOfferedProperties";
@@ -7,14 +7,7 @@ import { formatPrice } from "@/lib/formatPrice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,10 +38,25 @@ export default function Buyers() {
   const [buyerToDelete, setBuyerToDelete] = useState<BuyerData | null>(null);
 
   const filteredBuyers = buyers.filter(
-    (buyer) =>
-      buyer.full_name.includes(searchQuery) ||
-      (buyer.phone?.includes(searchQuery) ?? false)
+    (buyer) => buyer.full_name.includes(searchQuery) || (buyer.phone?.includes(searchQuery) ?? false),
   );
+
+  // פונקציה חדשה להעתקת קישור שמותאם לאייפון
+  const handleCopyLink = async (buyer: BuyerData, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const baseUrl = "https://extramile-rtl-dash.lovable.app";
+    const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "הקישור הועתק",
+        description: "הקישור מוכן לשליחה ועובד גם באייפון",
+      });
+    } catch (err) {
+      toast({ title: "שגיאה בהעתקת הקישור", variant: "destructive" });
+    }
+  };
 
   const handleSmartMatch = (buyer: BuyerData, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -102,17 +110,13 @@ export default function Buyers() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="animate-fade-in">
             <h1 className="text-3xl font-bold text-foreground">קונים</h1>
-            <p className="mt-1 text-muted-foreground">
-              {buyers.length} קונים במערכת
-            </p>
+            <p className="mt-1 text-muted-foreground">{buyers.length} קונים במערכת</p>
           </div>
         </div>
 
-        {/* Search and Filter */}
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -129,7 +133,6 @@ export default function Buyers() {
           </Button>
         </div>
 
-        {/* Buyers Table */}
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden animate-fade-in">
           <Table>
             <TableHeader>
@@ -146,8 +149,8 @@ export default function Buyers() {
             </TableHeader>
             <TableBody>
               {filteredBuyers.map((buyer) => (
-                <TableRow 
-                  key={buyer.id} 
+                <TableRow
+                  key={buyer.id}
                   className="hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => handleRowClick(buyer)}
                 >
@@ -164,11 +167,6 @@ export default function Buyers() {
                       </div>
                       <div>
                         <p className="font-medium">{buyer.full_name}</p>
-                        {buyer.notes && (
-                          <p className="text-xs text-muted-foreground truncate max-w-[150px]">
-                            {buyer.notes}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </TableCell>
@@ -194,16 +192,9 @@ export default function Buyers() {
                           {city}
                         </Badge>
                       ))}
-                      {(buyer.target_cities?.length || 0) > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{(buyer.target_cities?.length || 0) - 2}
-                        </Badge>
-                      )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {buyer.min_rooms ? `${buyer.min_rooms}+` : "-"}
-                  </TableCell>
+                  <TableCell>{buyer.min_rooms ? `${buyer.min_rooms}+` : "-"}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"
@@ -233,10 +224,12 @@ export default function Buyers() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start">
-                        <DropdownMenuItem>עריכה</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSmartMatch(buyer)}>
-                          התאמת נכסים
+                        <DropdownMenuItem onClick={(e) => handleCopyLink(buyer, e)}>
+                          <Link className="ml-2 h-4 w-4" />
+                          העתק קישור לקונה
                         </DropdownMenuItem>
+                        <DropdownMenuItem>עריכה</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSmartMatch(buyer)}>התאמת נכסים</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -244,38 +237,19 @@ export default function Buyers() {
               ))}
             </TableBody>
           </Table>
-
-          {filteredBuyers.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Users className="h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mt-4 text-lg font-semibold">לא נמצאו קונים</h3>
-              <p className="mt-2 text-muted-foreground">נסה לחפש במילות מפתח אחרות</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Smart Matching Modal */}
-      <SmartMatchingModal
-        buyer={selectedBuyer}
-        open={matchingModalOpen}
-        onOpenChange={setMatchingModalOpen}
-      />
+      <SmartMatchingModal buyer={selectedBuyer} open={matchingModalOpen} onOpenChange={setMatchingModalOpen} />
 
-      {/* Buyer Details Drawer */}
-      <BuyerDetailsDrawer
-        buyer={selectedBuyer}
-        open={detailsDrawerOpen}
-        onOpenChange={setDetailsDrawerOpen}
-      />
+      <BuyerDetailsDrawer buyer={selectedBuyer} open={detailsDrawerOpen} onOpenChange={setDetailsDrawerOpen} />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!buyerToDelete} onOpenChange={(open) => !open && setBuyerToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
             <AlertDialogDescription>
-              פעולה זו תמחק את הקונה "{buyerToDelete?.full_name}" לצמיתות. לא ניתן לבטל פעולה זו.
+              פעולה זו תמחק את הקונה "{buyerToDelete?.full_name}" לצמיתות.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
