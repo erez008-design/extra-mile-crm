@@ -16,7 +16,9 @@ import Buyer from "./pages/Buyer";
 import BuyerPropertyDetails from "./pages/BuyerPropertyDetails";
 import CompareProperties from "./pages/CompareProperties";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
+import Buyers from "./pages/Buyers";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -40,6 +42,8 @@ const App = () => {
             <Route path="/buyer/:buyerId/property/:propertyId" element={<BuyerPropertyDetails />} />
             <Route path="/compare" element={<CompareProperties />} />
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+            <Route path="/buyers" element={<Buyers />} />
+            <Route path="/install" element={<Install />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

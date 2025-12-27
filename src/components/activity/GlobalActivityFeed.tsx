@@ -103,7 +103,7 @@ export function GlobalActivityFeed({ limit = 50, className }: GlobalActivityFeed
             <p className="text-muted-foreground">אין פעילות עדיין</p>
           </div>
         ) : (
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[400px] ios-scroll">
             <div className="divide-y divide-border">
               {activities.map((activity) => (
                 <GlobalActivityItem key={activity.id} activity={activity} />
