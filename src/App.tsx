@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
+import { OfflineAlert } from "./components/OfflineAlert"; // ייבוא המחוון שיצרת ב-GitHub
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -28,6 +29,7 @@ const App = () => {
       <TooltipProvider delayDuration={0}>
         <Toaster />
         <Sonner />
+        <OfflineAlert /> {/* הצגת המחוון בכל דפי האפליקציה */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -44,7 +46,6 @@ const App = () => {
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/buyers" element={<Buyers />} />
             <Route path="/install" element={<Install />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
