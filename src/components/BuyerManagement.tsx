@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { UserPlus, Copy, Users, MessageCircle, Plus, Building2, Sparkles, Save, FileText, Upload, Trash2, ExternalLink, Wand2, Filter, Zap, EyeOff, Eye, Info } from "lucide-react";
+import { BuyerDetailsDrawer } from "@/components/buyers/BuyerDetailsDrawer";
+import { BuyerData } from "@/hooks/useBuyers";
 import { BuyerFiltersModal, hasFiltersConfigured } from "./BuyerFiltersModal";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -110,6 +112,9 @@ export const BuyerManagement = () => {
   
   // Toggle for showing excluded properties per buyer
   const [showExcludedByBuyer, setShowExcludedByBuyer] = useState<Set<string>>(new Set());
+  
+  // Selected buyer for the drawer
+  const [selectedBuyerForDrawer, setSelectedBuyerForDrawer] = useState<BuyerData | null>(null);
 
   // Get buyer IDs for real-time matches
   const buyerIds = useMemo(() => buyers.map(b => b.id), [buyers]);
@@ -721,6 +726,46 @@ export const BuyerManagement = () => {
     toast.success("הקישור הועתק ללוח");
   };
 
+  // פונקציה לשליחת וואטסאפ
+  const handleSendWhatsApp = (buyer: Buyer) => {
+    const baseUrl = "https://extramile-rtl-dash.lovable.app";
+    const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
+    
+    // ניקוי מספר הטלפון והוספת קידומת ישראל
+    let phone = buyer.phone?.replace(/\D/g, "") || "";
+    if (phone.startsWith("0")) {
+      phone = "972" + phone.slice(1);
+    } else if (!phone.startsWith("972")) {
+      phone = "972" + phone;
+    }
+    
+    const message = `היי ${buyer.full_name}, הכנתי עבורך רשימת נכסים חדשים שמתאימים לדרישות שלך. אפשר לראות את כל הפרטים והתמונות כאן: ${shareUrl}`;
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, "_blank");
+  };
+
+  // Convert buyer to BuyerData format for drawer
+  const openBuyerDrawer = (buyer: BuyerWithProperties) => {
+    const buyerData: BuyerData = {
+      id: buyer.id,
+      full_name: buyer.full_name,
+      phone: buyer.phone,
+      budget_min: buyer.budget_min ?? null,
+      budget_max: buyer.budget_max ?? null,
+      target_budget: null,
+      target_cities: buyer.target_cities ?? null,
+      target_neighborhoods: buyer.target_neighborhoods ?? null,
+      min_rooms: buyer.min_rooms ?? null,
+      floor_min: buyer.floor_min ?? null,
+      floor_max: buyer.floor_max ?? null,
+      required_features: buyer.required_features ?? null,
+      notes: buyer.notes ?? null,
+      created_at: buyer.created_at,
+    };
+    setSelectedBuyerForDrawer(buyerData);
+  };
+
   const getBuyerStats = (buyer: BuyerWithProperties) => {
     const props = buyer.buyer_properties || [];
     return {
@@ -853,9 +898,12 @@ export const BuyerManagement = () => {
                 return (
                   <Card key={buyer.id} className="p-4">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => openBuyerDrawer(buyer)}
+                      >
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{buyer.full_name}</h3>
+                          <h3 className="font-semibold hover:text-primary transition-colors">{buyer.full_name}</h3>
                           <Badge variant="outline" className={temp.color}>
                             {temp.label}
                           </Badge>
@@ -889,6 +937,14 @@ export const BuyerManagement = () => {
                         <Button size="sm" variant="outline" onClick={() => copyBuyerLink(buyer.id)}>
                           <Copy className="w-4 h-4 ml-1" />
                           העתק קישור
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleSendWhatsApp(buyer)}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                        >
+                          <MessageCircle className="w-4 h-4 ml-1" />
+                          שלח בוואטסאפ
                         </Button>
                         <Button
                           size="sm"
@@ -1512,6 +1568,13 @@ export const BuyerManagement = () => {
           />
         ) : null;
       })()}
+
+      {/* Buyer Details Drawer */}
+      <BuyerDetailsDrawer
+        buyer={selectedBuyerForDrawer}
+        open={!!selectedBuyerForDrawer}
+        onOpenChange={(open) => !open && setSelectedBuyerForDrawer(null)}
+      />
     </div>
   );
 };
