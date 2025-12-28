@@ -9,7 +9,8 @@ import {
   UserPlus, 
   Sparkles, 
   Activity,
-  Loader2
+  Loader2,
+  MessageCircle
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   UserPlus,
   Sparkles,
   Activity,
+  MessageCircle,
 };
 
 function ActivityItem({ activity }: { activity: ActivityLog }) {
