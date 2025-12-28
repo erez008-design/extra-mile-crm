@@ -19,6 +19,7 @@ import {
   Link,
   Sparkles,
   Plus,
+  MessageCircle,
 } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
 import { useOfferedProperties, useUpdateAgentFeedback, OfferedProperty } from "@/hooks/useOfferedProperties";
@@ -71,6 +72,25 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
     }
   };
 
+  // פונקציה לשליחת וואטסאפ
+  const handleSendWhatsApp = () => {
+    const baseUrl = "https://extramile-rtl-dash.lovable.app";
+    const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
+    
+    // ניקוי מספר הטלפון והוספת קידומת ישראל
+    let phone = buyer.phone?.replace(/\D/g, "") || "";
+    if (phone.startsWith("0")) {
+      phone = "972" + phone.slice(1);
+    } else if (!phone.startsWith("972")) {
+      phone = "972" + phone;
+    }
+    
+    const message = `היי ${buyer.full_name}, הכנתי עבורך רשימת נכסים חדשים שמתאימים לדרישות שלך. אפשר לראות את כל הפרטים והתמונות כאן: ${shareUrl}`;
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, "_blank");
+  };
+
   const getBudgetDisplay = () => {
     if (buyer.target_budget) {
       const min = Math.round(buyer.target_budget * 0.8);
@@ -118,6 +138,14 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
                 <Button variant="outline" size="sm" onClick={handleCopyLink} className="gap-2">
                   <Link className="h-4 w-4" />
                   העתק קישור
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleSendWhatsApp} 
+                  className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  שלח בוואטסאפ
                 </Button>
                 <Button variant="outline" size="sm" className="gap-2 border-accent/30 text-accent">
                   <Sparkles className="h-4 w-4" />

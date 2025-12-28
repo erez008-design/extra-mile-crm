@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2, Link } from "lucide-react";
+import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2, Link, MessageCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useBuyers, BuyerData } from "@/hooks/useBuyers";
 import { useDeleteBuyer } from "@/hooks/useOfferedProperties";
@@ -56,6 +56,26 @@ export default function Buyers() {
     } catch (err) {
       toast({ title: "שגיאה בהעתקת הקישור", variant: "destructive" });
     }
+  };
+
+  // פונקציה לשליחת וואטסאפ
+  const handleSendWhatsApp = (buyer: BuyerData, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const baseUrl = "https://extramile-rtl-dash.lovable.app";
+    const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
+    
+    // ניקוי מספר הטלפון והוספת קידומת ישראל
+    let phone = buyer.phone?.replace(/\D/g, "") || "";
+    if (phone.startsWith("0")) {
+      phone = "972" + phone.slice(1);
+    } else if (!phone.startsWith("972")) {
+      phone = "972" + phone;
+    }
+    
+    const message = `היי ${buyer.full_name}, הכנתי עבורך רשימת נכסים חדשים שמתאימים לדרישות שלך. אפשר לראות את כל הפרטים והתמונות כאן: ${shareUrl}`;
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(whatsappUrl, "_blank");
   };
 
   const handleSmartMatch = (buyer: BuyerData, e?: React.MouseEvent) => {
@@ -227,6 +247,10 @@ export default function Buyers() {
                         <DropdownMenuItem onClick={(e) => handleCopyLink(buyer, e)}>
                           <Link className="ml-2 h-4 w-4" />
                           העתק קישור לקונה
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handleSendWhatsApp(buyer, e)} className="text-emerald-600">
+                          <MessageCircle className="ml-2 h-4 w-4" />
+                          שלח בוואטסאפ
                         </DropdownMenuItem>
                         <DropdownMenuItem>עריכה</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleSmartMatch(buyer)}>התאמת נכסים</DropdownMenuItem>
