@@ -726,8 +726,8 @@ export const BuyerManagement = () => {
     toast.success("הקישור הועתק ללוח");
   };
 
-  // פונקציה לשליחת וואטסאפ
-  const handleSendWhatsApp = (buyer: Buyer) => {
+  // פונקציה לשליחת וואטסאפ עם רישום פעילות
+  const handleSendWhatsApp = async (buyer: Buyer) => {
     const baseUrl = "https://extramile-rtl-dash.lovable.app";
     const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
     
@@ -741,6 +741,19 @@ export const BuyerManagement = () => {
     
     const message = `היי ${buyer.full_name}, הכנתי עבורך רשימת נכסים חדשים שמתאימים לדרישות שלך. אפשר לראות את כל הפרטים והתמונות כאן: ${shareUrl}`;
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // Log activity to database
+    try {
+      await supabase.from("activity_logs").insert({
+        buyer_id: buyer.id,
+        agent_id: agentId,
+        action_type: "whatsapp_sent" as any,
+        description: "נשלחה הודעת WhatsApp עם קישור לנכסים",
+        metadata: { phone, share_url: shareUrl }
+      });
+    } catch (error) {
+      console.error("Failed to log WhatsApp activity:", error);
+    }
     
     window.open(whatsappUrl, "_blank");
   };

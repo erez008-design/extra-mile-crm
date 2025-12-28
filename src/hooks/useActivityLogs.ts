@@ -9,7 +9,8 @@ export type ActivityActionType =
   | 'link_viewed'
   | 'status_changed'
   | 'buyer_created'
-  | 'match_found';
+  | 'match_found'
+  | 'whatsapp_sent';
 
 export interface ActivityLog {
   id: string;
@@ -137,6 +138,8 @@ export function getActivityIcon(actionType: ActivityActionType) {
       return { icon: 'UserPlus', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' };
     case 'match_found':
       return { icon: 'Sparkles', color: 'text-pink-500', bgColor: 'bg-pink-500/10' };
+    case 'whatsapp_sent':
+      return { icon: 'MessageCircle', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' };
     default:
       return { icon: 'Activity', color: 'text-muted-foreground', bgColor: 'bg-muted' };
   }
@@ -159,6 +162,8 @@ export function getActivityLabel(actionType: ActivityActionType) {
       return 'לקוח נוצר';
     case 'match_found':
       return 'התאמה נמצאה';
+    case 'whatsapp_sent':
+      return 'WhatsApp נשלח';
     default:
       return 'פעילות';
   }

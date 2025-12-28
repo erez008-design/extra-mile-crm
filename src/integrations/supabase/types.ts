@@ -898,6 +898,7 @@ export type Database = {
         | "status_changed"
         | "buyer_created"
         | "match_found"
+        | "whatsapp_sent"
       app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
@@ -1034,6 +1035,7 @@ export const Constants = {
         "status_changed",
         "buyer_created",
         "match_found",
+        "whatsapp_sent",
       ],
       app_role: ["admin", "agent", "client", "manager"],
     },

@@ -22,6 +22,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
+import { supabase } from "@/integrations/supabase/client";
 import { useOfferedProperties, useUpdateAgentFeedback, OfferedProperty } from "@/hooks/useOfferedProperties";
 import { formatPrice } from "@/lib/formatPrice";
 import { safeDateDisplay } from "@/lib/safeDate";
@@ -72,8 +73,8 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
     }
   };
 
-  // פונקציה לשליחת וואטסאפ
-  const handleSendWhatsApp = () => {
+  // פונקציה לשליחת וואטסאפ עם רישום פעילות
+  const handleSendWhatsApp = async () => {
     const baseUrl = "https://extramile-rtl-dash.lovable.app";
     const shareUrl = `${baseUrl}/buyer/${buyer.id}`;
     
@@ -87,6 +88,20 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
     
     const message = `היי ${buyer.full_name}, הכנתי עבורך רשימת נכסים חדשים שמתאימים לדרישות שלך. אפשר לראות את כל הפרטים והתמונות כאן: ${shareUrl}`;
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    
+    // Log activity to database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("activity_logs").insert({
+        buyer_id: buyer.id,
+        agent_id: user?.id || null,
+        action_type: "whatsapp_sent" as any,
+        description: "נשלחה הודעת WhatsApp עם קישור לנכסים",
+        metadata: { phone, share_url: shareUrl }
+      });
+    } catch (error) {
+      console.error("Failed to log WhatsApp activity:", error);
+    }
     
     window.open(whatsappUrl, "_blank");
   };
