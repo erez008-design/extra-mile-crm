@@ -5,7 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, Home, Maximize, Building, Car, Bath, Calendar, FileText, Info } from "lucide-react";
+import { 
+  ArrowRight, 
+  Home, 
+  Maximize, 
+  Building, 
+  Car, 
+  Bath, 
+  Calendar, 
+  FileText, 
+  Info,
+  Check,
+  X,
+  Layers,
+  Wind,
+  Wrench,
+  Package,
+  Sun,
+  Users
+} from "lucide-react";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 
 interface Property {
@@ -15,6 +33,15 @@ interface Property {
   price: number;
   size_sqm: number | null;
   rooms: number | null;
+  floor: number | null;
+  total_floors: number | null;
+  has_elevator: boolean | null;
+  has_sun_balcony: boolean | null;
+  has_safe_room: boolean | null;
+  parking_spots: number | null;
+  build_year: number | null;
+  renovation_status: string | null;
+  air_directions: string[] | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
 }
 
@@ -57,6 +84,30 @@ interface ComparisonProperty {
   comparisonNote: string;
 }
 
+// Yes/No icon component
+const BooleanIcon = ({ value, label }: { value: boolean | null | undefined; label?: string }) => {
+  if (value === true) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        {label && <span className="text-xs text-foreground">{label}</span>}
+      </div>
+    );
+  }
+  if (value === false) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+          <X className="w-3 h-3 text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+  return <span className="text-muted-foreground text-xs">—</span>;
+};
+
 const CompareProperties = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -77,7 +128,6 @@ const CompareProperties = () => {
     setLoading(true);
     
     try {
-      // Fetch buyer properties
       const { data: buyerProperties, error } = await supabase
         .from("buyer_properties")
         .select(`
@@ -92,7 +142,6 @@ const CompareProperties = () => {
 
       if (error) throw error;
 
-      // Fetch extended details for each property
       const extendedPromises = propertyIds.map(async (propId) => {
         const { data } = await supabase
           .from("property_extended_details")
@@ -105,7 +154,6 @@ const CompareProperties = () => {
       const extendedResults = await Promise.all(extendedPromises);
       const extendedMap = new Map(extendedResults.map(r => [r.propId, r.data]));
 
-      // Build comparison data
       const data: ComparisonProperty[] = (buyerProperties || []).map((bp) => ({
         buyerProperty: bp,
         extended: extendedMap.get(bp.property_id) || null,
@@ -130,7 +178,7 @@ const CompareProperties = () => {
   };
 
   const getRenovationLabel = (status: string | null | undefined) => {
-    if (!status) return "—";
+    if (!status) return null;
     const labels: Record<string, string> = {
       new: "חדש מקבלן",
       renovated: "משופץ",
@@ -154,7 +202,7 @@ const CompareProperties = () => {
   };
 
   const getAirDirectionsDisplay = (directions: string[] | null) => {
-    if (!directions || directions.length === 0) return "—";
+    if (!directions || directions.length === 0) return null;
     const labels: Record<string, string> = {
       north: "צפון",
       south: "דרום",
@@ -168,87 +216,163 @@ const CompareProperties = () => {
     return directions.map(d => labels[d] || d).join(", ");
   };
 
-  const getValue = (item: ComparisonProperty, field: string): string => {
+  // Check if a row has data in at least one property
+  const hasRowData = (field: string): boolean => {
+    return comparisonData.some(item => {
+      const value = getRawValue(item, field);
+      return value !== null && value !== undefined && value !== "" && value !== "—";
+    });
+  };
+
+  // Get raw value for checking if data exists
+  const getRawValue = (item: ComparisonProperty, field: string): any => {
+    const prop = item.buyerProperty.properties as any;
+    const ext = item.extended;
+
+    switch (field) {
+      case "price": return prop.price;
+      case "size_sqm": return prop.size_sqm;
+      case "price_per_sqm": return prop.size_sqm ? prop.price / prop.size_sqm : null;
+      case "rooms": return prop.rooms;
+      case "floor": return prop.floor;
+      case "total_floors": return prop.total_floors;
+      case "elevators": return prop.has_elevator;
+      case "tenants": return ext?.tenants_count;
+      case "parking": return prop.parking_spots ?? ext?.parking_count;
+      case "storage": return ext?.has_storage;
+      case "balcony": return prop.has_sun_balcony;
+      case "safe_room": return prop.has_safe_room;
+      case "renovation": return prop.renovation_status;
+      case "bathrooms": return ext?.bathrooms;
+      case "toilets": return ext?.toilets;
+      case "building_year": return prop.build_year;
+      case "air_directions": return prop.air_directions || ext?.air_directions;
+      default: return null;
+    }
+  };
+
+  // Render value with icons for boolean fields
+  const renderValue = (item: ComparisonProperty, field: string): React.ReactNode => {
     const prop = item.buyerProperty.properties as any;
     const ext = item.extended;
 
     switch (field) {
       case "price":
-        return formatPrice(prop.price);
+        return (
+          <span className="text-primary font-bold text-sm sm:text-base">
+            {formatPrice(prop.price)}
+          </span>
+        );
       case "size_sqm":
-        return prop.size_sqm ? `${prop.size_sqm} מ״ר` : "—";
+        return prop.size_sqm ? (
+          <span className="font-semibold text-sm">{prop.size_sqm} מ״ר</span>
+        ) : null;
       case "price_per_sqm":
-        return prop.size_sqm ? `₪${Math.round(prop.price / prop.size_sqm).toLocaleString()}` : "—";
+        return prop.size_sqm ? (
+          <span className="text-muted-foreground text-xs sm:text-sm">
+            ₪{Math.round(prop.price / prop.size_sqm).toLocaleString()}
+          </span>
+        ) : null;
       case "rooms":
-        return prop.rooms ? `${prop.rooms}` : "—";
+        return prop.rooms ? (
+          <span className="font-semibold text-sm">{prop.rooms}</span>
+        ) : null;
       case "floor":
-        // Read from main properties table
         if (prop.floor != null && prop.total_floors != null) {
-          return `${prop.floor} מתוך ${prop.total_floors}`;
+          return <span className="text-sm">{prop.floor} מתוך {prop.total_floors}</span>;
         }
-        return prop.floor != null ? `${prop.floor}` : "—";
+        return prop.floor != null ? <span className="text-sm">{prop.floor}</span> : null;
       case "total_floors":
-        return prop.total_floors != null ? `${prop.total_floors}` : "—";
-      case "elevators":
-        // Check from main properties table, count from extended
-        if (!prop.has_elevator) return "אין";
-        return ext?.elevators_count ? `יש (${ext.elevators_count})` : "יש";
+        return prop.total_floors != null ? (
+          <span className="text-sm">{prop.total_floors}</span>
+        ) : null;
+      case "elevators": {
+        if (prop.has_elevator === false) return <BooleanIcon value={false} />;
+        if (prop.has_elevator === true) {
+          const count = ext?.elevators_count;
+          return <BooleanIcon value={true} label={count ? `(${count})` : undefined} />;
+        }
+        return null;
+      }
       case "tenants":
-        return ext?.tenants_count != null ? `${ext.tenants_count}` : "—";
-      case "parking":
-        // Show parking count from properties table and type from extended details
+        return ext?.tenants_count != null ? (
+          <span className="text-sm">{ext.tenants_count}</span>
+        ) : null;
+      case "parking": {
         const count = prop.parking_spots ?? ext?.parking_count ?? 0;
         const typeDisplay = getParkingTypeDisplay(ext?.parking_type);
-        if (count === 0 && !typeDisplay) return "אין";
-        return typeDisplay ? `${count} (${typeDisplay})` : `${count}`;
-      case "storage":
-        if (!ext) return "—";
-        if (!ext.has_storage) return "אין";
-        return ext.storage_size_sqm ? `יש (${ext.storage_size_sqm} מ״ר)` : "יש";
-      case "balcony":
-        // Now uses only has_sun_balcony (balcony = sun balcony)
-        if (!prop.has_sun_balcony) return "אין";
-        return ext?.balcony_size_sqm ? `יש (${ext.balcony_size_sqm} מ״ר)` : "יש";
-      case "renovation":
-        // Read from main properties table
-        return getRenovationLabel(prop.renovation_status);
+        if (count === 0 && !typeDisplay) return <BooleanIcon value={false} />;
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <Car className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="text-xs">{count}{typeDisplay ? ` (${typeDisplay})` : ""}</span>
+          </div>
+        );
+      }
+      case "storage": {
+        if (!ext?.has_storage) return <BooleanIcon value={ext?.has_storage ?? null} />;
+        const size = ext.storage_size_sqm;
+        return <BooleanIcon value={true} label={size ? `(${size} מ״ר)` : undefined} />;
+      }
+      case "balcony": {
+        if (!prop.has_sun_balcony) return <BooleanIcon value={prop.has_sun_balcony ?? null} />;
+        const size = ext?.balcony_size_sqm;
+        return <BooleanIcon value={true} label={size ? `(${size} מ״ר)` : undefined} />;
+      }
+      case "safe_room":
+        return <BooleanIcon value={prop.has_safe_room} />;
+      case "renovation": {
+        const label = getRenovationLabel(prop.renovation_status);
+        return label ? <span className="text-xs sm:text-sm">{label}</span> : null;
+      }
       case "bathrooms":
-        return ext?.bathrooms != null ? `${ext.bathrooms}` : "—";
+        return ext?.bathrooms != null ? (
+          <span className="text-sm">{ext.bathrooms}</span>
+        ) : null;
       case "toilets":
-        return ext?.toilets != null ? `${ext.toilets}` : "—";
+        return ext?.toilets != null ? (
+          <span className="text-sm">{ext.toilets}</span>
+        ) : null;
       case "building_year":
-        // Read from main properties table
-        return prop.build_year != null ? `${prop.build_year}` : "—";
-      case "air_directions":
-        // Check main properties table first, then extended details
-        return getAirDirectionsDisplay(prop.air_directions || ext?.air_directions || null);
+        return prop.build_year != null ? (
+          <span className="text-sm">{prop.build_year}</span>
+        ) : null;
+      case "air_directions": {
+        const dirs = getAirDirectionsDisplay(prop.air_directions || ext?.air_directions || null);
+        return dirs ? <span className="text-xs">{dirs}</span> : null;
+      }
       default:
-        return "—";
+        return null;
     }
   };
 
   const comparisonFields = [
-    { key: "price", label: "מחיר", category: "basic" },
-    { key: "size_sqm", label: "גודל", category: "basic" },
-    { key: "price_per_sqm", label: "מחיר למ״ר", category: "basic" },
-    { key: "rooms", label: "חדרים", category: "basic" },
-    { key: "floor", label: "קומה", category: "technical" },
-    { key: "total_floors", label: "סה״כ קומות", category: "technical" },
-    { key: "elevators", label: "מעליות", category: "technical" },
-    { key: "tenants", label: "דיירים בבניין", category: "technical" },
-    { key: "parking", label: "חניה", category: "technical" },
-    { key: "storage", label: "מחסן", category: "technical" },
-    { key: "balcony", label: "מרפסת שמש", category: "technical" },
-    { key: "renovation", label: "רמת שיפוץ", category: "technical" },
-    { key: "bathrooms", label: "חדרי רחצה", category: "technical" },
-    { key: "toilets", label: "שירותים", category: "technical" },
-    { key: "building_year", label: "שנת בנייה", category: "technical" },
-    { key: "air_directions", label: "כיווני אוויר", category: "technical" },
+    { key: "price", label: "מחיר", icon: Home, category: "basic" },
+    { key: "size_sqm", label: "גודל", icon: Maximize, category: "basic" },
+    { key: "price_per_sqm", label: "מחיר למ״ר", icon: Home, category: "basic" },
+    { key: "rooms", label: "חדרים", icon: Layers, category: "basic" },
+    { key: "floor", label: "קומה", icon: Building, category: "technical" },
+    { key: "elevators", label: "מעליות", icon: Building, category: "technical" },
+    { key: "tenants", label: "דיירים בבניין", icon: Users, category: "technical" },
+    { key: "parking", label: "חניה", icon: Car, category: "technical" },
+    { key: "storage", label: "מחסן", icon: Package, category: "technical" },
+    { key: "balcony", label: "מרפסת שמש", icon: Sun, category: "technical" },
+    { key: "safe_room", label: "ממ״ד", icon: Building, category: "technical" },
+    { key: "renovation", label: "רמת שיפוץ", icon: Wrench, category: "technical" },
+    { key: "bathrooms", label: "חדרי רחצה", icon: Bath, category: "technical" },
+    { key: "toilets", label: "שירותים", icon: Bath, category: "technical" },
+    { key: "building_year", label: "שנת בנייה", icon: Calendar, category: "technical" },
+    { key: "air_directions", label: "כיווני אוויר", icon: Wind, category: "technical" },
   ];
+
+  // Filter fields that have data
+  const fieldsWithData = comparisonFields.filter(f => hasRowData(f.key));
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
@@ -256,8 +380,8 @@ const CompareProperties = () => {
 
   if (comparisonData.length < 2) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-6 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="p-6 text-center shadow-medium">
           <p className="text-muted-foreground mb-4">יש לבחור לפחות 2 נכסים להשוואה</p>
           <Button onClick={() => navigate(`/buyer/${buyerId}`)}>חזרה לנכסים</Button>
         </Card>
@@ -266,182 +390,232 @@ const CompareProperties = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
-      <header className="border-b bg-card shadow-soft sticky top-0 z-10">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <div className="min-h-screen bg-muted/30" dir="rtl">
+      {/* Compact Header */}
+      <header className="border-b bg-card/95 backdrop-blur-sm shadow-soft sticky top-0 z-30">
+        <div className="container mx-auto px-3 py-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <img src={extraMileLogo} alt="EXTRAMILE" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover" />
-              <span className="font-semibold text-base sm:text-lg">השוואת נכסים</span>
+            <div className="flex items-center gap-2">
+              <img 
+                src={extraMileLogo} 
+                alt="EXTRAMILE" 
+                className="w-7 h-7 rounded-lg object-cover" 
+              />
+              <span className="font-semibold text-sm">השוואת נכסים</span>
             </div>
-            <Button variant="ghost" onClick={() => navigate(`/buyer/${buyerId}`)} className="h-10 sm:h-11">
-              <ArrowRight className="w-4 h-4 ml-2" />
-              <span className="hidden sm:inline">חזרה לנכסים</span>
-              <span className="sm:hidden">חזרה</span>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate(`/buyer/${buyerId}`)} 
+              className="h-8 px-2"
+            >
+              <ArrowRight className="w-4 h-4 ml-1" />
+              <span>חזרה</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {/* Unified Comparison Grid - Same columns for headers and data */}
-        <div className="overflow-x-auto md:overflow-visible -mx-2 px-2 md:mx-0 md:px-0">
-          <Card className="min-w-max md:min-w-0">
-            {/* Property Headers Row - Uses same grid as data rows */}
-            <div 
-              className="grid gap-2 sm:gap-4 p-3 sm:p-4 border-b bg-muted/30"
-              style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-            >
-              <div className="font-medium text-muted-foreground text-xs sm:text-sm">נכס</div>
+      {/* Sticky Property Cards Header */}
+      <div className="sticky top-[49px] z-20 bg-card border-b shadow-soft">
+        <div className="container mx-auto px-3 py-3">
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            {comparisonData.map((item, index) => {
+              const prop = item.buyerProperty.properties;
+              const mainImage = prop.property_images?.find(i => i.is_primary)?.url || prop.property_images?.[0]?.url;
+              return (
+                <div 
+                  key={item.buyerProperty.id} 
+                  className="flex-shrink-0 bg-background rounded-xl p-2.5 shadow-soft border min-w-[140px] max-w-[180px]"
+                >
+                  {mainImage && (
+                    <img 
+                      src={mainImage} 
+                      alt={prop.address} 
+                      className="w-full h-20 rounded-lg object-cover mb-2" 
+                    />
+                  )}
+                  <h3 className="font-semibold text-xs leading-tight line-clamp-2 mb-0.5">
+                    {prop.address}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground">{prop.city}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-3 py-4 space-y-4">
+        {/* Basic Data Card */}
+        <Card className="shadow-soft overflow-hidden">
+          <CardHeader className="py-3 px-4 bg-primary/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Home className="w-4 h-4 text-primary" />
+              נתונים בסיסיים
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {fieldsWithData
+              .filter(f => f.category === "basic")
+              .map((field, idx) => (
+                <div 
+                  key={field.key} 
+                  className={`flex items-center gap-3 px-4 py-3 ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
+                >
+                  {/* Label Column - Fixed width */}
+                  <div className="w-24 flex-shrink-0 flex items-center gap-2">
+                    <field.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-medium">{field.label}</span>
+                  </div>
+                  {/* Values */}
+                  <div className="flex-1 flex gap-4">
+                    {comparisonData.map((item) => (
+                      <div 
+                        key={item.buyerProperty.id} 
+                        className="flex-1 min-w-0"
+                      >
+                        {renderValue(item, field.key) || <span className="text-muted-foreground/50 text-xs">—</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+
+        {/* Technical Data Card */}
+        <Card className="shadow-soft overflow-hidden">
+          <CardHeader className="py-3 px-4 bg-primary/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Info className="w-4 h-4 text-primary" />
+              נתונים טכניים
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {fieldsWithData
+              .filter(f => f.category === "technical")
+              .map((field, idx) => (
+                <div 
+                  key={field.key} 
+                  className={`flex items-center gap-3 px-4 py-3 ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
+                >
+                  {/* Label Column - Fixed width */}
+                  <div className="w-24 flex-shrink-0 flex items-center gap-2">
+                    <field.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground font-medium">{field.label}</span>
+                  </div>
+                  {/* Values */}
+                  <div className="flex-1 flex gap-4">
+                    {comparisonData.map((item) => (
+                      <div 
+                        key={item.buyerProperty.id} 
+                        className="flex-1 min-w-0"
+                      >
+                        {renderValue(item, field.key) || <span className="text-muted-foreground/50 text-xs">—</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+
+        {/* Client Notes Card */}
+        <Card className="shadow-soft overflow-hidden">
+          <CardHeader className="py-3 px-4 bg-primary/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <FileText className="w-4 h-4 text-primary" />
+              הערות הלקוח
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Liked */}
+            {comparisonData.some(item => item.buyerProperty.liked_text) && (
+              <div className="flex items-start gap-3 px-4 py-3 bg-background">
+                <div className="w-24 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground font-medium">מה אהבתי</span>
+                </div>
+                <div className="flex-1 flex gap-4">
+                  {comparisonData.map((item) => (
+                    <div key={item.buyerProperty.id} className="flex-1 min-w-0">
+                      <p className="text-xs leading-relaxed">
+                        {item.buyerProperty.liked_text || <span className="text-muted-foreground/50">—</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Disliked */}
+            {comparisonData.some(item => item.buyerProperty.disliked_text) && (
+              <div className="flex items-start gap-3 px-4 py-3 bg-muted/20">
+                <div className="w-24 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground font-medium">מה פחות אהבתי</span>
+                </div>
+                <div className="flex-1 flex gap-4">
+                  {comparisonData.map((item) => (
+                    <div key={item.buyerProperty.id} className="flex-1 min-w-0">
+                      <p className="text-xs leading-relaxed">
+                        {item.buyerProperty.disliked_text || <span className="text-muted-foreground/50">—</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Note */}
+            {comparisonData.some(item => item.buyerProperty.note) && (
+              <div className="flex items-start gap-3 px-4 py-3 bg-background">
+                <div className="w-24 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground font-medium">הערה אישית</span>
+                </div>
+                <div className="flex-1 flex gap-4">
+                  {comparisonData.map((item) => (
+                    <div key={item.buyerProperty.id} className="flex-1 min-w-0">
+                      <p className="text-xs leading-relaxed">
+                        {item.buyerProperty.note || <span className="text-muted-foreground/50">—</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Show message if no notes */}
+            {!comparisonData.some(item => item.buyerProperty.liked_text || item.buyerProperty.disliked_text || item.buyerProperty.note) && (
+              <div className="px-4 py-6 text-center">
+                <p className="text-xs text-muted-foreground">אין הערות עדיין</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Personal Comparison Notes */}
+        <Card className="shadow-soft">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-sm font-semibold">הערות השוואה אישיות</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {comparisonData.map((item) => {
                 const prop = item.buyerProperty.properties;
-                const mainImage = prop.property_images?.find(i => i.is_primary)?.url || prop.property_images?.[0]?.url;
                 return (
-                  <div key={item.buyerProperty.id} className="flex items-center gap-2">
-                    {mainImage && (
-                      <img src={mainImage} alt={prop.address} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover flex-shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-xs sm:text-sm truncate">{prop.address}</h3>
-                      <p className="text-xs text-muted-foreground truncate">{prop.city}</p>
-                    </div>
+                  <div key={item.buyerProperty.id} className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground line-clamp-1">
+                      {prop.address}
+                    </label>
+                    <Textarea
+                      placeholder="הערות אישיות..."
+                      value={comparisonNotes[item.buyerProperty.id] || ""}
+                      onChange={(e) => setComparisonNotes({
+                        ...comparisonNotes,
+                        [item.buyerProperty.id]: e.target.value
+                      })}
+                      className="text-sm min-h-[80px] resize-none"
+                    />
                   </div>
                 );
               })}
-            </div>
-
-            {/* Basic Data Section */}
-            <CardHeader className="py-3 sm:py-4 border-b">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Home className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                נתונים בסיסיים
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {comparisonFields.filter(f => f.category === "basic").map((field) => (
-                  <div 
-                    key={field.key} 
-                    className="grid gap-2 sm:gap-4 p-2 sm:p-3 hover:bg-muted/50"
-                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-                  >
-                    <div className="font-medium text-muted-foreground text-xs sm:text-sm">{field.label}</div>
-                    {comparisonData.map((item) => (
-                      <div key={item.buyerProperty.id} className="font-semibold text-xs sm:text-sm">
-                        {getValue(item, field.key)}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-
-            {/* Technical Data Section */}
-            <CardHeader className="py-3 sm:py-4 border-b border-t">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Info className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                נתונים טכניים
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {comparisonFields.filter(f => f.category === "technical").map((field) => (
-                  <div 
-                    key={field.key} 
-                    className="grid gap-2 sm:gap-4 p-2 sm:p-3 hover:bg-muted/50"
-                    style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-                  >
-                    <div className="font-medium text-muted-foreground text-xs sm:text-sm">{field.label}</div>
-                    {comparisonData.map((item) => (
-                      <div key={item.buyerProperty.id} className="text-xs sm:text-sm">
-                        {getValue(item, field.key)}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Client Notes Section - Separate Card */}
-        <div className="overflow-x-auto md:overflow-visible -mx-2 px-2 md:mx-0 md:px-0 mt-4 sm:mt-6">
-          <Card className="min-w-max md:min-w-0">
-            <CardHeader className="py-3 sm:py-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                הערות הלקוח
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {/* Liked */}
-                <div 
-                  className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-                >
-                  <div className="font-medium text-muted-foreground text-xs sm:text-sm">מה אהבתי</div>
-                  {comparisonData.map((item) => (
-                    <div key={item.buyerProperty.id} className="text-xs sm:text-sm">
-                      {item.buyerProperty.liked_text || "—"}
-                    </div>
-                  ))}
-                </div>
-                {/* Disliked */}
-                <div 
-                  className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-                >
-                  <div className="font-medium text-muted-foreground text-xs sm:text-sm">מה פחות אהבתי</div>
-                  {comparisonData.map((item) => (
-                    <div key={item.buyerProperty.id} className="text-xs sm:text-sm">
-                      {item.buyerProperty.disliked_text || "—"}
-                    </div>
-                  ))}
-                </div>
-                {/* Note */}
-                <div 
-                  className="grid gap-2 sm:gap-4 p-2 sm:p-3"
-                  style={{ gridTemplateColumns: `120px repeat(${comparisonData.length}, minmax(140px, 250px))` }}
-                >
-                  <div className="font-medium text-muted-foreground text-xs sm:text-sm">הערה אישית</div>
-                  {comparisonData.map((item) => (
-                    <div key={item.buyerProperty.id} className="text-xs sm:text-sm">
-                      {item.buyerProperty.note || "—"}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Personal Comparison Notes */}
-        <Card className="mt-4 sm:mt-6">
-          <CardHeader className="py-3 sm:py-4">
-            <CardTitle className="text-base sm:text-lg">הערות השוואה אישיות</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div 
-              className="grid gap-4"
-              style={{ gridTemplateColumns: `repeat(${Math.min(comparisonData.length, 2)}, 1fr)` }}
-            >
-              {comparisonData.map((item) => (
-                <div key={item.buyerProperty.id}>
-                  <p className="text-xs sm:text-sm font-medium mb-2">{item.buyerProperty.properties.address}</p>
-                  <Textarea
-                    value={comparisonNotes[item.buyerProperty.id] || ""}
-                    onChange={(e) => setComparisonNotes(prev => ({
-                      ...prev,
-                      [item.buyerProperty.id]: e.target.value
-                    }))}
-                    placeholder="כתוב הערת השוואה אישית..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
-              ))}
             </div>
           </CardContent>
         </Card>
