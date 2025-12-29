@@ -42,6 +42,9 @@ interface Property {
   build_year: number | null;
   renovation_status: string | null;
   air_directions: string[] | null;
+  property_type: string | null;
+  plot_size_sqm: number | null;
+  levels_count: number | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
 }
 
@@ -188,6 +191,21 @@ const CompareProperties = () => {
     return labels[status] || status;
   };
 
+  const getPropertyTypeLabel = (type: string | null | undefined) => {
+    if (!type) return null;
+    const labels: Record<string, string> = {
+      apartment: "דירה",
+      penthouse: "פנטהאוז",
+      private_house: "בית פרטי",
+      semi_detached: "דו משפחתי",
+    };
+    return labels[type] || type;
+  };
+
+  const isHouseType = (type: string | null | undefined) => {
+    return type === "private_house" || type === "semi_detached";
+  };
+
   const getParkingTypeDisplay = (types: string[] | null | undefined) => {
     if (!types || types.length === 0) return "";
     const labels: Record<string, string> = {
@@ -230,10 +248,13 @@ const CompareProperties = () => {
     const ext = item.extended;
 
     switch (field) {
+      case "property_type": return prop.property_type;
       case "price": return prop.price;
       case "size_sqm": return prop.size_sqm;
+      case "plot_size_sqm": return prop.plot_size_sqm;
       case "price_per_sqm": return prop.size_sqm ? prop.price / prop.size_sqm : null;
       case "rooms": return prop.rooms;
+      case "levels_count": return prop.levels_count;
       case "floor": return prop.floor;
       case "total_floors": return prop.total_floors;
       case "elevators": return prop.has_elevator;
@@ -255,8 +276,13 @@ const CompareProperties = () => {
   const renderValue = (item: ComparisonProperty, field: string): React.ReactNode => {
     const prop = item.buyerProperty.properties as any;
     const ext = item.extended;
+    const isHouse = isHouseType(prop.property_type);
 
     switch (field) {
+      case "property_type": {
+        const label = getPropertyTypeLabel(prop.property_type);
+        return label ? <span className="text-xs sm:text-sm font-medium">{label}</span> : null;
+      }
       case "price":
         return (
           <span className="text-primary font-bold text-sm sm:text-base">
@@ -266,6 +292,10 @@ const CompareProperties = () => {
       case "size_sqm":
         return prop.size_sqm ? (
           <span className="font-semibold text-sm">{prop.size_sqm} מ״ר</span>
+        ) : null;
+      case "plot_size_sqm":
+        return prop.plot_size_sqm ? (
+          <span className="font-semibold text-sm">{prop.plot_size_sqm} מ״ר</span>
         ) : null;
       case "price_per_sqm":
         return prop.size_sqm ? (
@@ -277,16 +307,26 @@ const CompareProperties = () => {
         return prop.rooms ? (
           <span className="font-semibold text-sm">{prop.rooms}</span>
         ) : null;
+      case "levels_count":
+        return prop.levels_count ? (
+          <span className="text-sm">{prop.levels_count} קומות</span>
+        ) : null;
       case "floor":
+        // Hide floor for houses
+        if (isHouse) return null;
         if (prop.floor != null && prop.total_floors != null) {
           return <span className="text-sm">{prop.floor} מתוך {prop.total_floors}</span>;
         }
         return prop.floor != null ? <span className="text-sm">{prop.floor}</span> : null;
       case "total_floors":
+        // Hide total_floors for houses
+        if (isHouse) return null;
         return prop.total_floors != null ? (
           <span className="text-sm">{prop.total_floors}</span>
         ) : null;
       case "elevators": {
+        // Hide elevator for houses
+        if (isHouse) return null;
         if (prop.has_elevator === false) return <BooleanIcon value={false} />;
         if (prop.has_elevator === true) {
           const count = ext?.elevators_count;
@@ -348,13 +388,26 @@ const CompareProperties = () => {
     }
   };
 
+  // Check if any property is a house type
+  const hasAnyHouse = comparisonData.some(item => 
+    isHouseType(item.buyerProperty.properties.property_type)
+  );
+  
+  // Check if any property is an apartment type
+  const hasAnyApartment = comparisonData.some(item => 
+    !isHouseType(item.buyerProperty.properties.property_type)
+  );
+
   const comparisonFields = [
+    { key: "property_type", label: "סוג נכס", icon: Home, category: "basic" },
     { key: "price", label: "מחיר", icon: Home, category: "basic" },
-    { key: "size_sqm", label: "גודל", icon: Maximize, category: "basic" },
+    { key: "size_sqm", label: "שטח בנוי", icon: Maximize, category: "basic" },
+    ...(hasAnyHouse ? [{ key: "plot_size_sqm", label: "שטח מגרש", icon: Maximize, category: "basic" }] : []),
     { key: "price_per_sqm", label: "מחיר למ״ר", icon: Home, category: "basic" },
     { key: "rooms", label: "חדרים", icon: Layers, category: "basic" },
-    { key: "floor", label: "קומה", icon: Building, category: "technical" },
-    { key: "elevators", label: "מעליות", icon: Building, category: "technical" },
+    ...(hasAnyHouse ? [{ key: "levels_count", label: "קומות בבית", icon: Layers, category: "basic" }] : []),
+    ...(hasAnyApartment ? [{ key: "floor", label: "קומה", icon: Building, category: "technical" }] : []),
+    ...(hasAnyApartment ? [{ key: "elevators", label: "מעליות", icon: Building, category: "technical" }] : []),
     { key: "tenants", label: "דיירים בבניין", icon: Users, category: "technical" },
     { key: "parking", label: "חניה", icon: Car, category: "technical" },
     { key: "storage", label: "מחסן", icon: Package, category: "technical" },

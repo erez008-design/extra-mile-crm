@@ -1574,6 +1574,8 @@ export const BuyerManagement = () => {
               required_features: selectedBuyer.required_features ?? null,
               floor_min: selectedBuyer.floor_min ?? null,
               floor_max: selectedBuyer.floor_max ?? null,
+              property_types: (selectedBuyer as any).property_types ?? null,
+              min_plot_size: (selectedBuyer as any).min_plot_size ?? null,
             }}
             open={!!editingFiltersBuyerId}
             onOpenChange={(open) => !open && setEditingFiltersBuyerId(null)}

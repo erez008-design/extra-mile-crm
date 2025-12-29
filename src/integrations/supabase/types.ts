@@ -202,9 +202,11 @@ export type Database = {
           global_disliked_profile: string | null
           global_liked_profile: string | null
           id: string
+          min_plot_size: number | null
           min_rooms: number | null
           notes: string | null
           phone: string | null
+          property_types: string[] | null
           required_features: string[] | null
           target_budget: number | null
           target_cities: string[] | null
@@ -222,9 +224,11 @@ export type Database = {
           global_disliked_profile?: string | null
           global_liked_profile?: string | null
           id?: string
+          min_plot_size?: number | null
           min_rooms?: number | null
           notes?: string | null
           phone?: string | null
+          property_types?: string[] | null
           required_features?: string[] | null
           target_budget?: number | null
           target_cities?: string[] | null
@@ -242,9 +246,11 @@ export type Database = {
           global_disliked_profile?: string | null
           global_liked_profile?: string | null
           id?: string
+          min_plot_size?: number | null
           min_rooms?: number | null
           notes?: string | null
           phone?: string | null
+          property_types?: string[] | null
           required_features?: string[] | null
           target_budget?: number | null
           target_cities?: string[] | null
@@ -534,9 +540,12 @@ export type Database = {
           has_safe_room: boolean | null
           has_sun_balcony: boolean | null
           id: string
+          levels_count: number | null
           neighborhood: string | null
           parking_spots: number | null
+          plot_size_sqm: number | null
           price: number | null
+          property_type: string | null
           renovation_status: string | null
           rooms: number | null
           size_sqm: number | null
@@ -560,9 +569,12 @@ export type Database = {
           has_safe_room?: boolean | null
           has_sun_balcony?: boolean | null
           id?: string
+          levels_count?: number | null
           neighborhood?: string | null
           parking_spots?: number | null
+          plot_size_sqm?: number | null
           price?: number | null
+          property_type?: string | null
           renovation_status?: string | null
           rooms?: number | null
           size_sqm?: number | null
@@ -586,9 +598,12 @@ export type Database = {
           has_safe_room?: boolean | null
           has_sun_balcony?: boolean | null
           id?: string
+          levels_count?: number | null
           neighborhood?: string | null
           parking_spots?: number | null
+          plot_size_sqm?: number | null
           price?: number | null
+          property_type?: string | null
           renovation_status?: string | null
           rooms?: number | null
           size_sqm?: number | null

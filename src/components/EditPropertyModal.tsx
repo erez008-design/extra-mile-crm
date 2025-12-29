@@ -17,6 +17,13 @@ interface EditPropertyModalProps {
   onSaved: () => void;
 }
 
+const PROPERTY_TYPE_OPTIONS = [
+  { value: "apartment", label: "דירה" },
+  { value: "penthouse", label: "פנטהאוז" },
+  { value: "private_house", label: "בית פרטי" },
+  { value: "semi_detached", label: "דו משפחתי" },
+];
+
 const RENOVATION_STATUS_OPTIONS = [
   { value: "new", label: "חדש מקבלן" },
   { value: "renovated", label: "משופץ" },
@@ -44,6 +51,9 @@ const PARKING_TYPE_OPTIONS = [
   { value: "double", label: "כפולה / מכפיל" },
 ];
 
+// Helper to check if property type is a house
+const isHouseType = (type: string) => type === "private_house" || type === "semi_detached";
+
 export function EditPropertyModal({ property, open, onOpenChange, onSaved }: EditPropertyModalProps) {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,6 +72,10 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     has_safe_room: false,
     has_sun_balcony: false,
     description: "",
+    // Property type fields
+    property_type: "apartment",
+    plot_size_sqm: "",
+    levels_count: "",
     // Extended details
     balcony_size: "",
     parking_type: [] as string[],
@@ -93,6 +107,9 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_safe_room: property.has_safe_room || false,
         has_sun_balcony: property.has_sun_balcony || false,
         description: property.description || "",
+        property_type: property.property_type || "apartment",
+        plot_size_sqm: property.plot_size_sqm?.toString() || "",
+        levels_count: property.levels_count?.toString() || "",
       }));
     }
   }, [property, open]);
@@ -125,22 +142,26 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     setSaving(true);
     try {
       // Update main properties table
+      const isHouse = isHouseType(formData.property_type);
       const updateData = {
         address: formData.address,
         city: formData.city,
         price: formData.price ? parseFloat(formData.price) : null,
         size_sqm: formData.size_sqm ? parseInt(formData.size_sqm) : null,
         rooms: formData.rooms ? parseFloat(formData.rooms) : null,
-        floor: formData.floor ? parseInt(formData.floor) : null,
-        total_floors: formData.total_floors ? parseInt(formData.total_floors) : null,
+        floor: isHouse ? null : (formData.floor ? parseInt(formData.floor) : null),
+        total_floors: isHouse ? null : (formData.total_floors ? parseInt(formData.total_floors) : null),
         air_directions: formData.air_directions.length > 0 ? formData.air_directions : null,
         renovation_status: formData.renovation_status || null,
         build_year: formData.build_year ? parseInt(formData.build_year) : null,
         parking_spots: formData.parking_spots ? parseInt(formData.parking_spots) : null,
-        has_elevator: formData.has_elevator,
+        has_elevator: isHouse ? null : formData.has_elevator,
         has_safe_room: formData.has_safe_room,
         has_sun_balcony: formData.has_sun_balcony,
         description: formData.description || null,
+        property_type: formData.property_type,
+        plot_size_sqm: isHouse ? (formData.plot_size_sqm ? parseInt(formData.plot_size_sqm) : null) : null,
+        levels_count: isHouse ? (formData.levels_count ? parseInt(formData.levels_count) : null) : null,
       };
 
       const { error } = await supabase
@@ -187,6 +208,27 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
+          {/* Property Type */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">סוג הנכס</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {PROPERTY_TYPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, property_type: opt.value })}
+                  className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                    formData.property_type === opt.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border hover:bg-muted"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">פרטים בסיסיים</h3>
@@ -220,7 +262,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-size">גודל (מ"ר)</Label>
+                <Label htmlFor="edit-size">גודל בנוי (מ"ר)</Label>
                 <Input
                   id="edit-size"
                   type="number"
@@ -240,10 +282,39 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   className="h-11"
                 />
               </div>
+              {/* House-specific fields */}
+              {isHouseType(formData.property_type) && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-plot-size">גודל מגרש (מ"ר)</Label>
+                    <Input
+                      id="edit-plot-size"
+                      type="number"
+                      value={formData.plot_size_sqm}
+                      onChange={(e) => setFormData({ ...formData, plot_size_sqm: e.target.value })}
+                      className="h-11"
+                      placeholder="שטח המגרש"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-levels">מספר קומות בבית</Label>
+                    <Input
+                      id="edit-levels"
+                      type="number"
+                      min="1"
+                      value={formData.levels_count}
+                      onChange={(e) => setFormData({ ...formData, levels_count: e.target.value })}
+                      className="h-11"
+                      placeholder="לדוגמה: 2"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Building Info - Enrichment Fields */}
+          {/* Building Info - Enrichment Fields - Only for apartments */}
+          {!isHouseType(formData.property_type) && (
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">פרטי בניין</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -330,6 +401,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
               </div>
             </div>
           </div>
+          )}
 
           {/* Extended Details */}
           <div className="space-y-4">

@@ -22,6 +22,8 @@ interface BuyerFilters {
   required_features: string[] | null;
   floor_min: number | null;
   floor_max: number | null;
+  property_types: string[] | null;
+  min_plot_size: number | null;
 }
 
 interface BuyerFiltersModalProps {
@@ -60,6 +62,13 @@ const REQUIRED_FEATURES_OPTIONS = [
   { value: "has_safe_room", label: "ממ\"ד" },
   { value: "has_elevator", label: "מעלית" },
   { value: "has_sun_balcony", label: "מרפסת שמש" },
+];
+
+const PROPERTY_TYPE_OPTIONS = [
+  { value: "apartment", label: "דירה" },
+  { value: "penthouse", label: "פנטהאוז" },
+  { value: "private_house", label: "בית פרטי" },
+  { value: "semi_detached", label: "דו משפחתי" },
 ];
 
 export const BuyerFiltersModal = ({
@@ -131,6 +140,8 @@ export const BuyerFiltersModal = ({
           required_features: filters.required_features,
           floor_min: filters.floor_min,
           floor_max: filters.floor_max,
+          property_types: filters.property_types,
+          min_plot_size: filters.min_plot_size,
         })
         .eq("id", buyerId);
 
@@ -216,6 +227,24 @@ export const BuyerFiltersModal = ({
       });
     }
   };
+
+  const togglePropertyType = (type: string) => {
+    const currentTypes = filters.property_types || [];
+    if (currentTypes.includes(type)) {
+      setFilters({
+        ...filters,
+        property_types: currentTypes.filter((t) => t !== type),
+      });
+    } else {
+      setFilters({
+        ...filters,
+        property_types: [...currentTypes, type],
+      });
+    }
+  };
+
+  // Check if house types are selected to show plot size filter
+  const hasHouseTypes = filters.property_types?.some(t => t === "private_house" || t === "semi_detached") || false;
 
   // Get selected cities that have neighborhoods in the merged dictionary
   const selectedCitiesWithNeighborhoods = filters.target_cities?.filter(city => 
@@ -465,6 +494,59 @@ export const BuyerFiltersModal = ({
               </div>
             </div>
           </div>
+
+          {/* Property Types Section */}
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">6. סוג נכס</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {PROPERTY_TYPE_OPTIONS.map((type) => (
+                <div
+                  key={type.value}
+                  className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                    filters.property_types?.includes(type.value)
+                      ? "bg-primary/10 border-primary"
+                      : "hover:bg-muted/50"
+                  }`}
+                  onClick={() => togglePropertyType(type.value)}
+                >
+                  <Checkbox
+                    checked={filters.property_types?.includes(type.value) || false}
+                    onCheckedChange={() => togglePropertyType(type.value)}
+                  />
+                  <Label className="cursor-pointer text-sm">{type.label}</Label>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              * אם לא נבחר סוג, יוצגו כל סוגי הנכסים
+            </p>
+          </div>
+
+          {/* Minimum Plot Size - Only for houses */}
+          {hasHouseTypes && (
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">7. גודל מגרש מינימלי (מ״ר)</Label>
+              <div className="w-48">
+                <Input
+                  id="min_plot_size"
+                  type="number"
+                  min={0}
+                  value={filters.min_plot_size || ""}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      min_plot_size: e.target.value ? Number(e.target.value) : null,
+                    })
+                  }
+                  placeholder="לדוגמה: 200"
+                  dir="ltr"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                * רלוונטי רק לבתים פרטיים ודו-משפחתיים
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
