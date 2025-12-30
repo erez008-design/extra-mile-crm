@@ -36,6 +36,7 @@ interface Property {
   floor: number | null;
   total_floors: number | null;
   has_elevator: boolean | null;
+  elevators_count: number | null;
   has_sun_balcony: boolean | null;
   has_safe_room: boolean | null;
   parking_spots: number | null;
@@ -335,7 +336,8 @@ const CompareProperties = () => {
         if (isHouse) return null;
         if (prop.has_elevator === false) return <BooleanIcon value={false} />;
         if (prop.has_elevator === true) {
-          const count = ext?.elevators_count;
+          // Prioritize elevators_count from properties table, fallback to extended details
+          const count = prop.elevators_count ?? ext?.elevators_count;
           return <BooleanIcon value={true} label={count ? `(${count})` : undefined} />;
         }
         return null;
