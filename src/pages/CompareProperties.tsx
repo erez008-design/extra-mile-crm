@@ -45,6 +45,7 @@ interface Property {
   property_type: string | null;
   plot_size_sqm: number | null;
   levels_count: number | null;
+  garden_size_sqm: number | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
 }
 
@@ -252,6 +253,7 @@ const CompareProperties = () => {
       case "price": return prop.price;
       case "size_sqm": return prop.size_sqm;
       case "plot_size_sqm": return prop.plot_size_sqm;
+      case "garden_size_sqm": return prop.garden_size_sqm;
       case "price_per_sqm": return prop.size_sqm ? prop.price / prop.size_sqm : null;
       case "rooms": return prop.rooms;
       case "levels_count": return prop.levels_count;
@@ -297,6 +299,10 @@ const CompareProperties = () => {
         return prop.plot_size_sqm ? (
           <span className="font-semibold text-sm">{prop.plot_size_sqm} מ״ר</span>
         ) : null;
+      case "garden_size_sqm":
+        return prop.garden_size_sqm ? (
+          <span className="font-semibold text-sm">{prop.garden_size_sqm} מ״ר</span>
+        ) : null;
       case "price_per_sqm":
         return prop.size_sqm ? (
           <span className="text-muted-foreground text-xs sm:text-sm">
@@ -309,7 +315,7 @@ const CompareProperties = () => {
         ) : null;
       case "levels_count":
         return prop.levels_count ? (
-          <span className="text-sm">{prop.levels_count} קומות</span>
+          <span className="text-sm">{prop.levels_count} מפלסים</span>
         ) : null;
       case "floor":
         // Hide floor for houses
@@ -357,6 +363,8 @@ const CompareProperties = () => {
         return <BooleanIcon value={true} label={size ? `(${size} מ״ר)` : undefined} />;
       }
       case "balcony": {
+        // Hide balcony for houses
+        if (isHouse) return null;
         if (!prop.has_sun_balcony) return <BooleanIcon value={prop.has_sun_balcony ?? null} />;
         const size = ext?.balcony_size_sqm;
         return <BooleanIcon value={true} label={size ? `(${size} מ״ר)` : undefined} />;
@@ -403,15 +411,16 @@ const CompareProperties = () => {
     { key: "price", label: "מחיר", icon: Home, category: "basic" },
     { key: "size_sqm", label: "שטח בנוי", icon: Maximize, category: "basic" },
     ...(hasAnyHouse ? [{ key: "plot_size_sqm", label: "שטח מגרש", icon: Maximize, category: "basic" }] : []),
+    ...(hasAnyHouse ? [{ key: "garden_size_sqm", label: "שטח גינה", icon: Maximize, category: "basic" }] : []),
     { key: "price_per_sqm", label: "מחיר למ״ר", icon: Home, category: "basic" },
     { key: "rooms", label: "חדרים", icon: Layers, category: "basic" },
-    ...(hasAnyHouse ? [{ key: "levels_count", label: "קומות בבית", icon: Layers, category: "basic" }] : []),
+    ...(hasAnyHouse ? [{ key: "levels_count", label: "מפלסים", icon: Layers, category: "basic" }] : []),
     ...(hasAnyApartment ? [{ key: "floor", label: "קומה", icon: Building, category: "technical" }] : []),
     ...(hasAnyApartment ? [{ key: "elevators", label: "מעליות", icon: Building, category: "technical" }] : []),
-    { key: "tenants", label: "דיירים בבניין", icon: Users, category: "technical" },
+    ...(hasAnyApartment ? [{ key: "tenants", label: "דיירים בבניין", icon: Users, category: "technical" }] : []),
     { key: "parking", label: "חניה", icon: Car, category: "technical" },
     { key: "storage", label: "מחסן", icon: Package, category: "technical" },
-    { key: "balcony", label: "מרפסת שמש", icon: Sun, category: "technical" },
+    ...(hasAnyApartment ? [{ key: "balcony", label: "מרפסת שמש", icon: Sun, category: "technical" }] : []),
     { key: "safe_room", label: "ממ״ד", icon: Building, category: "technical" },
     { key: "renovation", label: "רמת שיפוץ", icon: Wrench, category: "technical" },
     { key: "bathrooms", label: "חדרי רחצה", icon: Bath, category: "technical" },

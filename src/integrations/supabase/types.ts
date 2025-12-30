@@ -535,6 +535,7 @@ export type Database = {
           description: string | null
           drive_folder_id: string | null
           floor: number | null
+          garden_size_sqm: number | null
           has_balcony: boolean | null
           has_elevator: boolean | null
           has_safe_room: boolean | null
@@ -564,6 +565,7 @@ export type Database = {
           description?: string | null
           drive_folder_id?: string | null
           floor?: number | null
+          garden_size_sqm?: number | null
           has_balcony?: boolean | null
           has_elevator?: boolean | null
           has_safe_room?: boolean | null
@@ -593,6 +595,7 @@ export type Database = {
           description?: string | null
           drive_folder_id?: string | null
           floor?: number | null
+          garden_size_sqm?: number | null
           has_balcony?: boolean | null
           has_elevator?: boolean | null
           has_safe_room?: boolean | null
