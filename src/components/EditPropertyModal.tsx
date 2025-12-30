@@ -77,13 +77,14 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     plot_size_sqm: "",
     levels_count: "",
     garden_size_sqm: "",
+    // Elevator count (stored in properties table)
+    elevators_count: "",
     // Extended details
     balcony_size: "",
     parking_type: [] as string[],
     has_storage: false,
     bathrooms: "",
     toilets: "",
-    elevators_count: "",
     tenants_count: "",
   });
 
@@ -112,6 +113,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         plot_size_sqm: property.plot_size_sqm?.toString() || "",
         levels_count: property.levels_count?.toString() || "",
         garden_size_sqm: property.garden_size_sqm?.toString() || "",
+        elevators_count: property.elevators_count?.toString() || "",
       }));
     }
   }, [property, open]);
@@ -132,7 +134,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_storage: data.has_storage || false,
         bathrooms: data.bathrooms?.toString() || "",
         toilets: data.toilets?.toString() || "",
-        elevators_count: data.elevators_count?.toString() || "",
         tenants_count: data.tenants_count?.toString() || "",
       }));
     }
@@ -145,6 +146,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     try {
       // Update main properties table
       const isHouse = isHouseType(formData.property_type);
+      const showElevatorCount = !isHouse && formData.has_elevator;
       const updateData = {
         address: formData.address,
         city: formData.city,
@@ -165,6 +167,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         plot_size_sqm: isHouse ? (formData.plot_size_sqm ? parseInt(formData.plot_size_sqm) : null) : null,
         levels_count: isHouse ? (formData.levels_count ? parseInt(formData.levels_count) : null) : null,
         garden_size_sqm: isHouse ? (formData.garden_size_sqm ? parseInt(formData.garden_size_sqm) : null) : null,
+        elevators_count: showElevatorCount && formData.elevators_count ? parseInt(formData.elevators_count) : null,
       };
 
       const { error } = await supabase
@@ -182,7 +185,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         has_storage: formData.has_storage,
         bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
         toilets: formData.toilets ? parseInt(formData.toilets) : null,
-        elevators_count: formData.elevators_count ? parseInt(formData.elevators_count) : null,
         tenants_count: formData.tenants_count ? parseInt(formData.tenants_count) : null,
       };
 
@@ -481,7 +483,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
               </div>
               {/* Elevator count - Only for apartments with elevator */}
               {!isHouseType(formData.property_type) && formData.has_elevator && (
-                <div className="space-y-2">
+                <div className="space-y-2 animate-fade-in">
                   <Label htmlFor="edit-elevators-count">מספר מעליות</Label>
                   <Input
                     id="edit-elevators-count"
@@ -490,6 +492,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                     value={formData.elevators_count}
                     onChange={(e) => setFormData({ ...formData, elevators_count: e.target.value })}
                     className="h-11"
+                    placeholder="לדוגמה: 2"
                   />
                 </div>
               )}
