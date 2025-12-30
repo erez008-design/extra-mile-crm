@@ -76,6 +76,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
     property_type: "apartment",
     plot_size_sqm: "",
     levels_count: "",
+    garden_size_sqm: "",
     // Extended details
     balcony_size: "",
     parking_type: [] as string[],
@@ -110,6 +111,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         property_type: property.property_type || "apartment",
         plot_size_sqm: property.plot_size_sqm?.toString() || "",
         levels_count: property.levels_count?.toString() || "",
+        garden_size_sqm: property.garden_size_sqm?.toString() || "",
       }));
     }
   }, [property, open]);
@@ -157,11 +159,12 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
         parking_spots: formData.parking_spots ? parseInt(formData.parking_spots) : null,
         has_elevator: isHouse ? null : formData.has_elevator,
         has_safe_room: formData.has_safe_room,
-        has_sun_balcony: formData.has_sun_balcony,
+        has_sun_balcony: isHouse ? null : formData.has_sun_balcony,
         description: formData.description || null,
         property_type: formData.property_type,
         plot_size_sqm: isHouse ? (formData.plot_size_sqm ? parseInt(formData.plot_size_sqm) : null) : null,
         levels_count: isHouse ? (formData.levels_count ? parseInt(formData.levels_count) : null) : null,
+        garden_size_sqm: isHouse ? (formData.garden_size_sqm ? parseInt(formData.garden_size_sqm) : null) : null,
       };
 
       const { error } = await supabase
@@ -297,7 +300,18 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-levels">מספר קומות בבית</Label>
+                    <Label htmlFor="edit-garden-size">שטח גינה (מ"ר)</Label>
+                    <Input
+                      id="edit-garden-size"
+                      type="number"
+                      value={formData.garden_size_sqm}
+                      onChange={(e) => setFormData({ ...formData, garden_size_sqm: e.target.value })}
+                      className="h-11"
+                      placeholder="שטח הגינה"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-levels">מספר מפלסים</Label>
                     <Input
                       id="edit-levels"
                       type="number"
@@ -306,6 +320,17 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                       onChange={(e) => setFormData({ ...formData, levels_count: e.target.value })}
                       className="h-11"
                       placeholder="לדוגמה: 2"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-parking-house">מספר חניות</Label>
+                    <Input
+                      id="edit-parking-house"
+                      type="number"
+                      value={formData.parking_spots}
+                      onChange={(e) => setFormData({ ...formData, parking_spots: e.target.value })}
+                      className="h-11"
+                      placeholder="מספר מקומות חניה"
                     />
                   </div>
                 </>
@@ -339,17 +364,6 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-build-year">שנת בנייה</Label>
-                <Input
-                  id="edit-build-year"
-                  type="number"
-                  placeholder="למשל: 2015"
-                  value={formData.build_year}
-                  onChange={(e) => setFormData({ ...formData, build_year: e.target.value })}
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="edit-parking">מס׳ חניות</Label>
                 <Input
                   id="edit-parking"
@@ -359,13 +373,34 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   className="h-11"
                 />
               </div>
-              <div className="space-y-2 sm:col-span-1">
-                <Label htmlFor="edit-renovation">מצב הנכס</Label>
+            </div>
+          </div>
+          )}
+
+          {/* Extended Details */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground">פרטים נוספים</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Build Year - available for all property types */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-build-year-all">שנת בנייה</Label>
+                <Input
+                  id="edit-build-year-all"
+                  type="number"
+                  placeholder="למשל: 2015"
+                  value={formData.build_year}
+                  onChange={(e) => setFormData({ ...formData, build_year: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+              {/* Renovation Status - available for all property types */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-renovation-all">מצב הנכס</Label>
                 <Select
                   value={formData.renovation_status}
                   onValueChange={(value) => setFormData({ ...formData, renovation_status: value })}
                 >
-                  <SelectTrigger id="edit-renovation" className="h-11">
+                  <SelectTrigger id="edit-renovation-all" className="h-11">
                     <SelectValue placeholder="בחר מצב" />
                   </SelectTrigger>
                   <SelectContent>
@@ -377,68 +412,44 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label>כיווני אוויר</Label>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
-                  {AIR_DIRECTION_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={formData.air_directions.includes(opt.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({ ...formData, air_directions: [...formData.air_directions, opt.value] });
-                          } else {
-                            setFormData({ ...formData, air_directions: formData.air_directions.filter(d => d !== opt.value) });
-                          }
-                        }}
-                        className="w-5 h-5 rounded border-input"
-                      />
-                      <span className="text-sm">{opt.label}</span>
-                    </label>
-                  ))}
+              {/* Balcony size - Only for apartments */}
+              {!isHouseType(formData.property_type) && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-balcony-size">גודל מרפסת במ״ר</Label>
+                  <Input
+                    id="edit-balcony-size"
+                    type="number"
+                    value={formData.balcony_size}
+                    onChange={(e) => setFormData({ ...formData, balcony_size: e.target.value })}
+                    className="h-11"
+                  />
                 </div>
-              </div>
-            </div>
-          </div>
-          )}
-
-          {/* Extended Details */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">פרטים נוספים</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-balcony-size">גודל מרפסת במ״ר</Label>
-                <Input
-                  id="edit-balcony-size"
-                  type="number"
-                  value={formData.balcony_size}
-                  onChange={(e) => setFormData({ ...formData, balcony_size: e.target.value })}
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label>סוג חניה</Label>
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
-                  {PARKING_TYPE_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={formData.parking_type.includes(opt.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({ ...formData, parking_type: [...formData.parking_type, opt.value] });
-                          } else {
-                            setFormData({ ...formData, parking_type: formData.parking_type.filter(t => t !== opt.value) });
-                          }
-                        }}
-                        className="w-5 h-5 rounded border-input"
-                      />
-                      <span className="text-sm">{opt.label}</span>
-                    </label>
-                  ))}
+              )}
+              {/* Parking Type - Only for apartments */}
+              {!isHouseType(formData.property_type) && (
+                <div className="space-y-2 col-span-1 sm:col-span-2">
+                  <Label>סוג חניה</Label>
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
+                    {PARKING_TYPE_OPTIONS.map((opt) => (
+                      <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
+                        <input
+                          type="checkbox"
+                          checked={formData.parking_type.includes(opt.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, parking_type: [...formData.parking_type, opt.value] });
+                            } else {
+                              setFormData({ ...formData, parking_type: formData.parking_type.filter(t => t !== opt.value) });
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-input"
+                        />
+                        <span className="text-sm">{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="edit-bathrooms">חדרי רחצה</Label>
                 <Input
@@ -468,7 +479,8 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                 />
                 <Label htmlFor="edit-storage" className="cursor-pointer text-base">מחסן</Label>
               </div>
-              {formData.has_elevator && (
+              {/* Elevator count - Only for apartments with elevator */}
+              {!isHouseType(formData.property_type) && formData.has_elevator && (
                 <div className="space-y-2">
                   <Label htmlFor="edit-elevators-count">מספר מעליות</Label>
                   <Input
@@ -481,16 +493,42 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                   />
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="edit-tenants-count">מספר דיירים בבניין</Label>
-                <Input
-                  id="edit-tenants-count"
-                  type="number"
-                  min="0"
-                  value={formData.tenants_count}
-                  onChange={(e) => setFormData({ ...formData, tenants_count: e.target.value })}
-                  className="h-11"
-                />
+              {/* Tenants count - Only for apartments */}
+              {!isHouseType(formData.property_type) && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-tenants-count">מספר דיירים בבניין</Label>
+                  <Input
+                    id="edit-tenants-count"
+                    type="number"
+                    min="0"
+                    value={formData.tenants_count}
+                    onChange={(e) => setFormData({ ...formData, tenants_count: e.target.value })}
+                    className="h-11"
+                  />
+                </div>
+              )}
+              {/* Air directions - available for all property types */}
+              <div className="space-y-2 col-span-1 sm:col-span-2">
+                <Label>כיווני אוויר</Label>
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
+                  {AIR_DIRECTION_OPTIONS.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer min-h-[44px]">
+                      <input
+                        type="checkbox"
+                        checked={formData.air_directions.includes(opt.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, air_directions: [...formData.air_directions, opt.value] });
+                          } else {
+                            setFormData({ ...formData, air_directions: formData.air_directions.filter(d => d !== opt.value) });
+                          }
+                        }}
+                        className="w-5 h-5 rounded border-input"
+                      />
+                      <span className="text-sm">{opt.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -499,24 +537,7 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">תכונות</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
-                <Checkbox
-                  id="edit-elevator"
-                  checked={formData.has_elevator}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_elevator: checked as boolean })}
-                  className="w-5 h-5"
-                />
-                <Label htmlFor="edit-elevator" className="cursor-pointer text-base">מעלית</Label>
-              </div>
-              <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
-                <Checkbox
-                  id="edit-sun-balcony"
-                  checked={formData.has_sun_balcony}
-                  onCheckedChange={(checked) => setFormData({ ...formData, has_sun_balcony: checked as boolean })}
-                  className="w-5 h-5"
-                />
-                <Label htmlFor="edit-sun-balcony" className="cursor-pointer text-base">מרפסת שמש</Label>
-              </div>
+              {/* Mamad - available for all property types */}
               <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
                 <Checkbox
                   id="edit-safe-room"
@@ -526,6 +547,30 @@ export function EditPropertyModal({ property, open, onOpenChange, onSaved }: Edi
                 />
                 <Label htmlFor="edit-safe-room" className="cursor-pointer text-base">ממ״ד</Label>
               </div>
+              {/* Elevator - Only for apartments */}
+              {!isHouseType(formData.property_type) && (
+                <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
+                  <Checkbox
+                    id="edit-elevator"
+                    checked={formData.has_elevator}
+                    onCheckedChange={(checked) => setFormData({ ...formData, has_elevator: checked as boolean })}
+                    className="w-5 h-5"
+                  />
+                  <Label htmlFor="edit-elevator" className="cursor-pointer text-base">מעלית</Label>
+                </div>
+              )}
+              {/* Sun Balcony - Only for apartments */}
+              {!isHouseType(formData.property_type) && (
+                <div className="flex items-center space-x-2 space-x-reverse min-h-[44px]">
+                  <Checkbox
+                    id="edit-sun-balcony"
+                    checked={formData.has_sun_balcony}
+                    onCheckedChange={(checked) => setFormData({ ...formData, has_sun_balcony: checked as boolean })}
+                    className="w-5 h-5"
+                  />
+                  <Label htmlFor="edit-sun-balcony" className="cursor-pointer text-base">מרפסת שמש</Label>
+                </div>
+              )}
             </div>
           </div>
 
