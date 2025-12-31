@@ -106,9 +106,34 @@ const Buyer = () => {
   }
   const [insightsForms, setInsightsForms] = useState<Record<string, InsightsFormData>>({});
 
+  // Log link view when buyer opens the page
+  const logLinkView = async () => {
+    if (!buyerId) return;
+    try {
+      // Get agent_id from buyer_properties if available
+      const { data: bpData } = await supabase
+        .from("buyer_properties")
+        .select("agent_id")
+        .eq("buyer_id", buyerId)
+        .limit(1)
+        .maybeSingle();
+
+      await supabase.from("activity_logs").insert({
+        buyer_id: buyerId,
+        agent_id: bpData?.agent_id || null,
+        action_type: "link_viewed" as any,
+        description: "הקונה פתח את קישור הנכסים",
+        metadata: { source: "buyer_page", timestamp: new Date().toISOString() }
+      });
+    } catch (error) {
+      console.error("Failed to log link view:", error);
+    }
+  };
+
   useEffect(() => {
     if (buyerId) {
       fetchBuyerData();
+      logLinkView(); // Log when buyer opens the page
     }
   }, [buyerId]);
 
@@ -349,6 +374,26 @@ const Buyer = () => {
     } else if (data === false) {
       toast.error("לא נמצא נכס לעדכון");
     } else {
+      // Log status change activity
+      try {
+        const buyerProperty = buyerProperties.find(bp => bp.id === buyerPropertyId);
+        await supabase.from("activity_logs").insert({
+          buyer_id: buyerId,
+          agent_id: buyerProperty?.agent_id || null,
+          action_type: "status_changed" as any,
+          description: `הקונה שינה סטטוס נכס ל: ${form.status}`,
+          metadata: { 
+            property_id: buyerProperty?.property_id,
+            old_status: buyerProperty?.status,
+            new_status: dbStatus,
+            liked_text: form.liked_text || null,
+            disliked_text: form.disliked_text || null
+          }
+        });
+      } catch (logError) {
+        console.error("Failed to log status change:", logError);
+      }
+
       toast.success("✔ נשמר למסד הנתונים: התובנות נשמרו בהצלחה");
       // Clear the form for this property after saving
       setInsightsForms((prev) => {
