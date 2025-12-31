@@ -921,6 +921,13 @@ export const BuyerManagement = () => {
                           <Badge variant="outline" className={temp.color}>
                             {temp.label}
                           </Badge>
+                          {/* Missing profile indicator */}
+                          {!buyer.global_liked_profile && !buyer.global_disliked_profile && (
+                            <Badge variant="outline" className="text-red-600 border-red-400 bg-red-50 dark:bg-red-950/30 gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              חסר פרופיל AI
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground" dir="ltr">
                           {buyer.phone}
@@ -1256,7 +1263,31 @@ export const BuyerManagement = () => {
                             <div>📋 <span className="font-medium">סיכום:</span> {buyer.client_match_summary}</div>
                           )}
                           {!buyer.global_liked_profile && !buyer.global_disliked_profile && !buyer.client_match_summary && (
-                            <div className="italic">לא הוגדר פרופיל טעם. לחץ על "עריכה" להוספה.</div>
+                            <div className="space-y-2">
+                              <div className="italic text-amber-600 dark:text-amber-400">
+                                לא הוגדר פרופיל טעם. יש לפחות 2 נכסים עם משוב ליצירת פרופיל AI.
+                              </div>
+                              {/* Quick AI generate button */}
+                              {buyer.buyer_properties?.filter(bp => bp.liked_text || bp.disliked_text || bp.not_interested_reason).length >= 2 ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    startEditingTasteProfile(buyer);
+                                    handleAISuggestion(buyer.id);
+                                  }}
+                                  disabled={aiLoading}
+                                  className="gap-1 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-300 hover:border-purple-400"
+                                >
+                                  <Sparkles className="w-4 h-4 text-purple-500" />
+                                  {aiLoading ? "מייצר פרופיל..." : "צור פרופיל AI אוטומטי"}
+                                </Button>
+                              ) : (
+                                <div className="text-xs text-muted-foreground">
+                                  נדרש משוב על {2 - (buyer.buyer_properties?.filter(bp => bp.liked_text || bp.disliked_text || bp.not_interested_reason).length || 0)} נכסים נוספים ליצירת פרופיל
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
                       )}
