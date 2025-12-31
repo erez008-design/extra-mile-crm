@@ -198,10 +198,13 @@ export type Database = {
           created_by_agent_id: string | null
           floor_max: number | null
           floor_min: number | null
+          follow_up_date: string | null
+          follow_up_note: string | null
           full_name: string
           global_disliked_profile: string | null
           global_liked_profile: string | null
           id: string
+          last_contact_date: string | null
           min_plot_size: number | null
           min_rooms: number | null
           notes: string | null
@@ -211,6 +214,7 @@ export type Database = {
           target_budget: number | null
           target_cities: string[] | null
           target_neighborhoods: string[] | null
+          whatsapp_auto_notify: boolean | null
         }
         Insert: {
           budget_max?: number | null
@@ -220,10 +224,13 @@ export type Database = {
           created_by_agent_id?: string | null
           floor_max?: number | null
           floor_min?: number | null
+          follow_up_date?: string | null
+          follow_up_note?: string | null
           full_name: string
           global_disliked_profile?: string | null
           global_liked_profile?: string | null
           id?: string
+          last_contact_date?: string | null
           min_plot_size?: number | null
           min_rooms?: number | null
           notes?: string | null
@@ -233,6 +240,7 @@ export type Database = {
           target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
+          whatsapp_auto_notify?: boolean | null
         }
         Update: {
           budget_max?: number | null
@@ -242,10 +250,13 @@ export type Database = {
           created_by_agent_id?: string | null
           floor_max?: number | null
           floor_min?: number | null
+          follow_up_date?: string | null
+          follow_up_note?: string | null
           full_name?: string
           global_disliked_profile?: string | null
           global_liked_profile?: string | null
           id?: string
+          last_contact_date?: string | null
           min_plot_size?: number | null
           min_rooms?: number | null
           notes?: string | null
@@ -255,6 +266,7 @@ export type Database = {
           target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
+          whatsapp_auto_notify?: boolean | null
         }
         Relationships: []
       }

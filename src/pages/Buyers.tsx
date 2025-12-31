@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Phone, Users, Loader2, Sparkles, Trash2, Link, MessageCircle } from "lucide-react";
+import { Search, Filter, MoreVertical, Phone, Users, Sparkles, Trash2, Link, MessageCircle, CalendarClock } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useBuyers, BuyerData } from "@/hooks/useBuyers";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,10 @@ import {
 import { SmartMatchingModal } from "@/components/buyers/SmartMatchingModal";
 import { BuyerDetailsDrawer } from "@/components/buyers/BuyerDetailsDrawer";
 import { toast } from "@/hooks/use-toast";
+import { TableSkeleton } from "@/components/ui/TableSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { format, isToday, isPast, isTomorrow } from "date-fns";
+import { he } from "date-fns/locale";
 
 export default function Buyers() {
   const { data: buyers = [], isLoading, error } = useBuyers();
@@ -121,11 +125,32 @@ export default function Buyers() {
     }
   };
 
+  const getFollowUpBadge = (followUpDate: string | null) => {
+    if (!followUpDate) return null;
+    const date = new Date(followUpDate);
+    if (isPast(date) && !isToday(date)) {
+      return <Badge variant="destructive" className="text-xs">עבר</Badge>;
+    }
+    if (isToday(date)) {
+      return <Badge className="bg-orange-500 text-white text-xs">היום</Badge>;
+    }
+    if (isTomorrow(date)) {
+      return <Badge className="bg-blue-500 text-white text-xs">מחר</Badge>;
+    }
+    return <Badge variant="secondary" className="text-xs">{format(date, "d/M", { locale: he })}</Badge>;
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex h-96 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">קונים</h1>
+              <p className="mt-1 text-muted-foreground">טוען...</p>
+            </div>
+          </div>
+          <TableSkeleton columns={7} rows={8} />
         </div>
       </DashboardLayout>
     );
@@ -168,6 +193,13 @@ export default function Buyers() {
           </Button>
         </div>
 
+        {filteredBuyers.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="אין קונים להצגה"
+            description={searchQuery ? "לא נמצאו קונים התואמים לחיפוש" : "עדיין לא הוספת קונים למערכת"}
+          />
+        ) : (
         <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden animate-fade-in">
           <Table>
             <TableHeader>
@@ -177,6 +209,7 @@ export default function Buyers() {
                 <TableHead className="text-right font-semibold">תקציב</TableHead>
                 <TableHead className="text-right font-semibold">אזורים</TableHead>
                 <TableHead className="text-right font-semibold">חדרים</TableHead>
+                <TableHead className="text-right font-semibold">פולואפ</TableHead>
                 <TableHead className="text-right font-semibold">התאמה חכמה</TableHead>
                 <TableHead className="text-right font-semibold w-12">מחיקה</TableHead>
                 <TableHead className="text-right font-semibold w-12"></TableHead>
@@ -231,6 +264,16 @@ export default function Buyers() {
                   </TableCell>
                   <TableCell>{buyer.min_rooms ? `${buyer.min_rooms}+` : "-"}</TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-2">
+                      {(buyer as any).follow_up_date && (
+                        <>
+                          <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                          {getFollowUpBadge((buyer as any).follow_up_date)}
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <Button
                       variant="outline"
                       size="sm"
@@ -277,6 +320,7 @@ export default function Buyers() {
             </TableBody>
           </Table>
         </div>
+        )}
       </div>
 
       <SmartMatchingModal buyer={selectedBuyer} open={matchingModalOpen} onOpenChange={setMatchingModalOpen} />
