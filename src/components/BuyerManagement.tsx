@@ -721,7 +721,8 @@ export const BuyerManagement = () => {
   };
 
   const copyBuyerLink = (buyerId: string) => {
-    const link = `${window.location.origin}/buyer/${buyerId}?agent=${agentId}`;
+    const baseUrl = "https://extramile-rtl-dash.lovable.app";
+    const link = `${baseUrl}/buyer/${buyerId}`;
     navigator.clipboard.writeText(link);
     toast.success("הקישור הועתק ללוח");
   };
