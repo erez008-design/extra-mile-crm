@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -7,28 +7,118 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Activity, 
   TrendingUp, 
   Users, 
   Building2, 
   CheckCircle2,
-  Eye
+  Eye,
+  Home,
+  Castle,
+  Warehouse
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { he } from "date-fns/locale";
 import { GlobalActivityFeed } from "@/components/activity/GlobalActivityFeed";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
   const { isManager, isLoading: roleLoading } = useUserRole();
   const { notifications, isLoading, unreadCount, markAsReadByManager } = useManagerNotifications();
+  
+  // Analytics state
+  const [propertyTypeData, setPropertyTypeData] = useState<Array<{name: string; value: number; color: string}>>([]);
+  const [topViewedProperties, setTopViewedProperties] = useState<Array<{id: string; address: string; city: string; views: number}>>([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
   useEffect(() => {
     if (!roleLoading && !isManager) {
       navigate("/");
     }
   }, [isManager, roleLoading, navigate]);
+
+  // Fetch analytics data
+  useEffect(() => {
+    if (isManager) {
+      fetchAnalytics();
+    }
+  }, [isManager]);
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      // Fetch property type distribution
+      const { data: properties } = await supabase
+        .from("properties")
+        .select("property_type");
+      
+      if (properties) {
+        const typeCounts: Record<string, number> = {};
+        properties.forEach(p => {
+          const type = p.property_type || "apartment";
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+        
+        const typeLabels: Record<string, { label: string; color: string }> = {
+          apartment: { label: "דירה", color: "#3b82f6" },
+          private_house: { label: "בית פרטי", color: "#22c55e" },
+          penthouse: { label: "פנטהאוז", color: "#a855f7" },
+          semi_detached: { label: "דו-משפחתי", color: "#f97316" },
+        };
+        
+        const chartData = Object.entries(typeCounts).map(([type, count]) => ({
+          name: typeLabels[type]?.label || type,
+          value: count,
+          color: typeLabels[type]?.color || "#6b7280",
+        }));
+        
+        setPropertyTypeData(chartData);
+      }
+
+      // Fetch top viewed properties
+      const { data: views } = await supabase
+        .from("property_views")
+        .select("property_id")
+        .order("viewed_at", { ascending: false });
+      
+      if (views) {
+        // Count views per property
+        const viewCounts: Record<string, number> = {};
+        views.forEach(v => {
+          viewCounts[v.property_id] = (viewCounts[v.property_id] || 0) + 1;
+        });
+        
+        // Get top 5
+        const topPropertyIds = Object.entries(viewCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([id]) => id);
+        
+        if (topPropertyIds.length > 0) {
+          const { data: topProps } = await supabase
+            .from("properties")
+            .select("id, address, city")
+            .in("id", topPropertyIds);
+          
+          if (topProps) {
+            const topViewed = topProps.map(p => ({
+              ...p,
+              views: viewCounts[p.id] || 0
+            })).sort((a, b) => b.views - a.views);
+            
+            setTopViewedProperties(topViewed);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
 
   if (roleLoading) {
     return (
@@ -122,6 +212,86 @@ export default function ManagerDashboard() {
                   <p className="text-sm text-muted-foreground">לא נקראו</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Analytics Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Property Type Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                התפלגות סוגי נכסים
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <Skeleton className="h-[200px] w-full" />
+              ) : propertyTypeData.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">אין נתונים</div>
+              ) : (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={propertyTypeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {propertyTypeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Viewed Properties */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                נכסים הכי נצפים
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+                </div>
+              ) : topViewedProperties.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">אין נתונים</div>
+              ) : (
+                <div className="space-y-3">
+                  {topViewedProperties.map((prop, idx) => (
+                    <div 
+                      key={prop.id} 
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                      onClick={() => navigate(`/property/${prop.id}`)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-muted-foreground">{idx + 1}</span>
+                        <div>
+                          <p className="font-medium text-sm">{prop.address}</p>
+                          <p className="text-xs text-muted-foreground">{prop.city}</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">{prop.views} צפיות</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

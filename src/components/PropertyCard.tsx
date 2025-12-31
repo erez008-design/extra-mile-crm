@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Home, Maximize, Eye, Car, Sun, Shield, FileText, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { Home, Maximize, Eye, Car, Sun, Shield, FileText, ChevronLeft, ChevronRight, AlertTriangle, Building2, HomeIcon, Castle, Warehouse } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 
@@ -25,10 +25,20 @@ interface PropertyCardProps {
     has_sun_balcony: boolean | null;
     parking_spots: number | null;
     has_safe_room: boolean | null;
+    property_type?: string | null;
+    plot_size_sqm?: number | null;
     property_images: Array<{ url: string; is_primary: boolean }>;
     property_documents?: Array<{ id: string; title: string; url: string }>;
   };
 }
+
+// Property type configuration
+const propertyTypeConfig: Record<string, { label: string; icon: React.ElementType; className: string }> = {
+  apartment: { label: "דירה", icon: Building2, className: "bg-blue-500/90 text-white" },
+  private_house: { label: "בית פרטי", icon: HomeIcon, className: "bg-green-500/90 text-white" },
+  penthouse: { label: "פנטהאוז", icon: Castle, className: "bg-purple-500/90 text-white" },
+  semi_detached: { label: "דו-משפחתי", icon: Warehouse, className: "bg-orange-500/90 text-white" },
+};
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
   const navigate = useNavigate();
@@ -62,6 +72,11 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
 
   const incomplete = isPropertyIncomplete(property);
 
+  // Get property type configuration
+  const propertyType = property.property_type || "apartment";
+  const typeConfig = propertyTypeConfig[propertyType] || propertyTypeConfig.apartment;
+  const TypeIcon = typeConfig.icon;
+
   return (
     <Card className="overflow-hidden hover:shadow-medium transition-all duration-300 group cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
       <div className="relative h-48 overflow-hidden">
@@ -70,6 +85,13 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           alt={property.address}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
+        {/* Property Type Badge - Top Left */}
+        <Badge className={`absolute top-3 left-3 gap-1 ${typeConfig.className}`}>
+          <TypeIcon className="w-3 h-3" />
+          {typeConfig.label}
+        </Badge>
+        
+        {/* Status & Incomplete Badges - Top Right */}
         <div className="absolute top-3 right-3 flex gap-2">
           <Badge className="bg-accent text-accent-foreground">
             זמין
@@ -85,7 +107,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         {/* Image counter and navigation */}
         {sortedImages.length > 1 && (
           <>
-            <Badge className="absolute top-3 left-3 bg-black/60 text-white text-xs">
+            <Badge className="absolute top-10 left-3 bg-black/60 text-white text-xs">
               {selectedImageIndex + 1} / {sortedImages.length}
             </Badge>
             <button
@@ -155,6 +177,19 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             <div className="flex items-center gap-1">
               <Maximize className="w-4 h-4" />
               <span>{property.size_sqm} מ"ר</span>
+            </div>
+          )}
+          {/* Show plot size for houses */}
+          {(propertyType === "private_house" || propertyType === "semi_detached") && property.plot_size_sqm && (
+            <div className="flex items-center gap-1">
+              <Maximize className="w-4 h-4 text-green-600" />
+              <span>מגרש: {property.plot_size_sqm} מ"ר</span>
+            </div>
+          )}
+          {/* Show floor for apartments/penthouses */}
+          {(propertyType === "apartment" || propertyType === "penthouse") && property.floor !== null && (
+            <div className="flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded">
+              קומה {property.floor}{property.total_floors ? ` מתוך ${property.total_floors}` : ''}
             </div>
           )}
           {property.parking_spots !== null && property.parking_spots > 0 && (
