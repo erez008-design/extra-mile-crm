@@ -20,6 +20,8 @@ import {
   Sparkles,
   Plus,
   MessageCircle,
+  CalendarClock,
+  Bell,
 } from "lucide-react";
 import { BuyerData } from "@/hooks/useBuyers";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,15 +35,30 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { he } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { ActivityTimeline } from "./ActivityTimeline";
+import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BuyerDetailsDrawerProps {
   buyer: BuyerData | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface ExtendedBuyer extends BuyerData {
+  whatsapp_auto_notify?: boolean;
+  follow_up_date?: string | null;
+  follow_up_note?: string | null;
+  last_contact_date?: string | null;
 }
 
 const FEATURE_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -54,6 +71,18 @@ const FEATURE_LABELS: Record<string, { label: string; icon: React.ReactNode }> =
 export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDrawerProps) {
   const { data: offeredProperties = [], isLoading } = useOfferedProperties(open ? (buyer?.id ?? null) : null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Extended buyer with new fields
+  const extendedBuyer = buyer as ExtendedBuyer | null;
+  
+  // Local state for follow-up
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>(
+    extendedBuyer?.follow_up_date ? new Date(extendedBuyer.follow_up_date) : undefined
+  );
+  const [followUpNote, setFollowUpNote] = useState(extendedBuyer?.follow_up_note || "");
+  const [whatsappAutoNotify, setWhatsappAutoNotify] = useState(extendedBuyer?.whatsapp_auto_notify || false);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!buyer) return null;
 
@@ -99,11 +128,38 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
         description: "נשלחה הודעת WhatsApp עם קישור לנכסים",
         metadata: { phone, share_url: shareUrl }
       });
+      
+      // Update last_contact_date
+      await supabase
+        .from("buyers")
+        .update({ last_contact_date: new Date().toISOString() })
+        .eq("id", buyer.id);
     } catch (error) {
       console.error("Failed to log WhatsApp activity:", error);
     }
     
     window.open(whatsappUrl, "_blank");
+  };
+
+  const handleSaveFollowUp = async () => {
+    setIsSaving(true);
+    try {
+      await supabase
+        .from("buyers")
+        .update({
+          follow_up_date: followUpDate?.toISOString() || null,
+          follow_up_note: followUpNote || null,
+          whatsapp_auto_notify: whatsappAutoNotify,
+        })
+        .eq("id", buyer.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["buyers"] });
+      toast({ title: "ההגדרות נשמרו בהצלחה" });
+    } catch (error) {
+      toast({ title: "שגיאה בשמירה", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getBudgetDisplay = () => {
@@ -175,6 +231,10 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
           <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0">
             <TabsTrigger value="details" className="px-6 py-3">
               דרישות חיפוש
+            </TabsTrigger>
+            <TabsTrigger value="followup" className="px-6 py-3">
+              <CalendarClock className="h-4 w-4 ml-1" />
+              פולואפ
             </TabsTrigger>
             <TabsTrigger value="offered" className="px-6 py-3">
               נכסים שהוצעו ({offeredProperties.length})
@@ -252,6 +312,101 @@ export function BuyerDetailsDrawer({ buyer, open, onOpenChange }: BuyerDetailsDr
                     </CardContent>
                   </Card>
                 )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="followup" className="mt-0">
+            <ScrollArea className="h-[calc(100vh-180px)] p-6">
+              <div className="space-y-6">
+                {/* WhatsApp Auto Notify Toggle */}
+                <Card className="border-emerald-500/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-emerald-500" />
+                      התראות אוטומטיות
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>שלח WhatsApp אוטומטי</Label>
+                        <p className="text-sm text-muted-foreground">
+                          כשנמצא נכס מתאים (70%+) תישלח הודעה אוטומטית
+                        </p>
+                      </div>
+                      <Switch
+                        checked={whatsappAutoNotify}
+                        onCheckedChange={setWhatsappAutoNotify}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Follow-up Date */}
+                <Card className="border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CalendarClock className="h-5 w-5 text-primary" />
+                      תזכורת פולואפ
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>תאריך פולואפ</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-right font-normal",
+                              !followUpDate && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="ml-2 h-4 w-4" />
+                            {followUpDate ? format(followUpDate, "PPP", { locale: he }) : "בחר תאריך"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={followUpDate}
+                            onSelect={setFollowUpDate}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>הערה לפולואפ</Label>
+                      <Textarea
+                        value={followUpNote}
+                        onChange={(e) => setFollowUpNote(e.target.value)}
+                        placeholder="מה לזכור לפולואפ..."
+                        className="min-h-[80px]"
+                        dir="rtl"
+                      />
+                    </div>
+
+                    {extendedBuyer?.last_contact_date && (
+                      <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                        <span className="font-medium">קשר אחרון: </span>
+                        {format(new Date(extendedBuyer.last_contact_date), "PPP", { locale: he })}
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={handleSaveFollowUp} 
+                      disabled={isSaving}
+                      className="w-full"
+                    >
+                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Save className="h-4 w-4 ml-2" />}
+                      שמור הגדרות
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </ScrollArea>
           </TabsContent>

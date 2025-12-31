@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Menu, X, Home, Building2, Users, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, Home, Building2, Users, Settings, LogOut, LayoutDashboard, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useUserRole } from "@/hooks/useUserRole";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ const navItems = [
   { label: "לוח בקרה", href: "/", icon: Home },
   { label: "נכסים", href: "/properties", icon: Building2 },
   { label: "קונים", href: "/buyers", icon: Users },
+  { label: "פולואפים", href: "/follow-ups", icon: CalendarClock },
   { label: "סוכן", href: "/agent", icon: Settings },
 ];
 
@@ -73,6 +75,7 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
                   </Button>
                 ))}
                 <NotificationBell />
+                <ThemeToggle />
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2 text-destructive hover:text-destructive touch-target">
                   <LogOut className="w-4 h-4" />
                   יציאה
