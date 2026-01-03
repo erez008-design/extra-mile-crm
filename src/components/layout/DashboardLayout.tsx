@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Menu, X, Home, Building2, Users, Settings, LogOut, LayoutDashboard, CalendarClock } from "lucide-react";
+import { Menu, X, Home, Building2, Users, Settings, LogOut, LayoutDashboard, CalendarClock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -116,6 +116,19 @@ export function DashboardLayout({ children, showNav = true }: DashboardLayoutPro
                             {item.label}
                           </Button>
                         ))}
+                        
+                        {/* Install App Button */}
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start gap-3 h-12 text-base touch-target border-dashed"
+                          onClick={() => {
+                            navigate("/install");
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <Download className="w-5 h-5" />
+                          התקן אפליקציה
+                        </Button>
                       </nav>
 
                       {/* Mobile Logout */}

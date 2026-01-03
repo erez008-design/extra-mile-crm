@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download, AlertTriangle, Pencil, BarChart3 } from "lucide-react";
+import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download, AlertTriangle, Pencil, BarChart3, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,9 @@ const Admin = () => {
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [selectedStatsAgent, setSelectedStatsAgent] = useState<string>("all");
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -337,6 +340,61 @@ const Admin = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser || !newPassword) {
+      toast.error("נא להזין סיסמה חדשה");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("הסיסמה חייבת להכיל לפחות 6 תווים");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { userId: resetPasswordUser.id, action: 'reset-password', newPassword }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`הסיסמה עודכנה בהצלחה עבור ${resetPasswordUser.full_name || resetPasswordUser.email}`);
+      setResetPasswordUser(null);
+      setNewPassword("");
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      toast.error("שגיאה באיפוס סיסמה: " + (error.message || 'שגיאה לא ידועה'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את ${user.full_name || user.email}? פעולה זו אינה ניתנת לביטול.`)) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { userId: user.id, action: 'delete-user' }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(`המשתמש ${user.full_name || user.email} נמחק בהצלחה`);
+      fetchData();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error("שגיאה במחיקת משתמש: " + (error.message || 'שגיאה לא ידועה'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card shadow-soft sticky top-0 z-10">
@@ -543,16 +601,73 @@ const Admin = () => {
                           <div className="text-sm text-muted-foreground">{user.phone}</div>
                         )}
                       </div>
-                      <div className="text-sm">
-                        {user.role === "admin" && <span className="px-2 py-1 rounded bg-destructive/10 text-destructive">מנהל</span>}
-                        {user.role === "agent" && <span className="px-2 py-1 rounded bg-accent/10 text-accent">סוכן</span>}
-                        {user.role === "client" && <span className="px-2 py-1 rounded bg-primary/10 text-primary">לקוח</span>}
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">
+                          {user.role === "admin" && <span className="px-2 py-1 rounded bg-destructive/10 text-destructive">מנהל</span>}
+                          {user.role === "agent" && <span className="px-2 py-1 rounded bg-accent/10 text-accent">סוכן</span>}
+                          {user.role === "client" && <span className="px-2 py-1 rounded bg-primary/10 text-primary">לקוח</span>}
+                        </span>
+                        {user.role === "agent" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setResetPasswordUser(user)}
+                              title="איפוס סיסמה"
+                              disabled={actionLoading}
+                            >
+                              <KeyRound className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteUser(user)}
+                              title="מחק סוכן"
+                              disabled={actionLoading}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Reset Password Dialog */}
+            <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && setResetPasswordUser(null)}>
+              <DialogContent dir="rtl" className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>איפוס סיסמה</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    איפוס סיסמה עבור: <strong>{resetPasswordUser?.full_name || resetPasswordUser?.email}</strong>
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">סיסמה חדשה</Label>
+                    <Input
+                      id="newPassword"
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="h-11"
+                      placeholder="הזן סיסמה חדשה (לפחות 6 תווים)"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleResetPassword} 
+                    className="w-full h-11"
+                    disabled={actionLoading || !newPassword}
+                  >
+                    {actionLoading ? "מעדכן..." : "עדכן סיסמה"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="properties">
