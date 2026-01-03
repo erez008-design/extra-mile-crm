@@ -22,6 +22,7 @@ import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import Buyers from "./pages/Buyers";
 import FollowUps from "./pages/FollowUps";
+import Catalog from "./pages/Catalog";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -49,6 +50,7 @@ const App = () => {
               <Route path="/manager/dashboard" element={<ManagerDashboard />} />
               <Route path="/buyers" element={<Buyers />} />
               <Route path="/follow-ups" element={<FollowUps />} />
+              <Route path="/catalog" element={<Catalog />} />
               <Route path="/install" element={<Install />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
