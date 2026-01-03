@@ -17,6 +17,9 @@ export interface BuyerUpload {
   created_at: string;
 }
 
+// 100MB max file size
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+
 // Get file type from MIME type
 function getFileType(mimeType: string): "image" | "video" | "document" {
   if (mimeType.startsWith("image/")) return "image";
@@ -42,6 +45,8 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
     queryFn: async () => {
       if (!buyerId || !propertyId) return [];
 
+      console.log("[BuyerUploads] Fetching uploads for buyerId:", buyerId, "propertyId:", propertyId);
+
       const { data, error } = await supabase
         .from("buyer_uploads")
         .select("*")
@@ -50,11 +55,31 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching buyer uploads:", error);
+        console.error("[BuyerUploads] Error fetching uploads:", error);
         return [];
       }
 
-      return data as BuyerUpload[];
+      console.log("[BuyerUploads] Fetched", data?.length || 0, "uploads");
+
+      // Refresh signed URLs for all uploads
+      const uploadsWithFreshUrls: BuyerUpload[] = [];
+      for (const upload of data || []) {
+        const { data: signedUrlData, error: signedError } = await supabase.storage
+          .from("buyer-uploads")
+          .createSignedUrl(upload.storage_path, 60 * 60); // 1 hour
+
+        if (signedError) {
+          console.error("[BuyerUploads] Error creating signed URL:", signedError);
+          uploadsWithFreshUrls.push(upload as BuyerUpload);
+        } else {
+          uploadsWithFreshUrls.push({
+            ...upload,
+            file_url: signedUrlData.signedUrl,
+          } as BuyerUpload);
+        }
+      }
+
+      return uploadsWithFreshUrls;
     },
     enabled: !!buyerId && !!propertyId,
   });
@@ -74,9 +99,18 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         throw new Error("Missing buyer or property ID");
       }
 
+      console.log("[BuyerUploads] Starting upload for buyerId:", buyerId, "file:", file.name, "size:", file.size);
+
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error("הקובץ גדול מדי (מקסימום 100MB)");
+      }
+
       const fileType = getFileType(file.type);
       const fileName = generateFileName(file.name);
       const storagePath = `${buyerId}/${propertyId}/${fileType}s/${fileName}`;
+
+      console.log("[BuyerUploads] Uploading to storage path:", storagePath);
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -87,9 +121,11 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         });
 
       if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        throw new Error("שגיאה בהעלאת הקובץ");
+        console.error("[BuyerUploads] Storage upload error:", uploadError);
+        throw new Error("שגיאה בהעלאת הקובץ: " + uploadError.message);
       }
+
+      console.log("[BuyerUploads] Storage upload successful, creating signed URL...");
 
       // Get signed URL (private bucket)
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -97,9 +133,13 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         .createSignedUrl(storagePath, 60 * 60 * 24 * 365); // 1 year
 
       if (signedUrlError) {
-        console.error("Signed URL error:", signedUrlError);
+        console.error("[BuyerUploads] Signed URL error:", signedUrlError);
+        // Clean up uploaded file
+        await supabase.storage.from("buyer-uploads").remove([storagePath]);
         throw new Error("שגיאה ביצירת קישור לקובץ");
       }
+
+      console.log("[BuyerUploads] Inserting record into buyer_uploads table...");
 
       // Insert record
       const { data, error: insertError } = await supabase
@@ -120,19 +160,25 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         .single();
 
       if (insertError) {
+        console.error("[BuyerUploads] Insert error:", insertError);
         // Try to delete the uploaded file if insert fails
         await supabase.storage.from("buyer-uploads").remove([storagePath]);
-        console.error("Insert error:", insertError);
-        throw new Error("שגיאה בשמירת פרטי הקובץ");
+        throw new Error("שגיאה בשמירת פרטי הקובץ: " + insertError.message);
       }
 
+      console.log("[BuyerUploads] Record inserted successfully:", data.id);
+
       // Log activity (anonymous - no file details exposed)
-      await supabase.from("activity_logs").insert({
-        buyer_id: buyerId,
-        action_type: "file_uploaded",
-        description: "הלקוח הוסיף מדיה ליומן האישי שלו",
-        metadata: { property_id: propertyId },
-      });
+      try {
+        await supabase.from("activity_logs").insert({
+          buyer_id: buyerId,
+          action_type: "file_uploaded",
+          description: "הלקוח הוסיף מדיה ליומן האישי שלו",
+          metadata: { property_id: propertyId },
+        });
+      } catch (logError) {
+        console.error("[BuyerUploads] Activity log error (non-critical):", logError);
+      }
 
       return data as BuyerUpload;
     },
@@ -141,6 +187,7 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
       toast.success("הקובץ הועלה בהצלחה");
     },
     onError: (error: Error) => {
+      console.error("[BuyerUploads] Upload mutation error:", error);
       toast.error(error.message || "שגיאה בהעלאת הקובץ");
     },
   });
@@ -152,13 +199,15 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         throw new Error("Missing buyer ID");
       }
 
+      console.log("[BuyerUploads] Deleting upload:", upload.id, "for buyerId:", buyerId);
+
       // Delete from storage
       const { error: storageError } = await supabase.storage
         .from("buyer-uploads")
         .remove([upload.storage_path]);
 
       if (storageError) {
-        console.error("Storage delete error:", storageError);
+        console.error("[BuyerUploads] Storage delete error:", storageError);
         // Continue anyway - the file might already be gone
       }
 
@@ -170,41 +219,21 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
         .eq("buyer_id", buyerId);
 
       if (deleteError) {
-        console.error("Delete error:", deleteError);
-        throw new Error("שגיאה במחיקת הקובץ");
+        console.error("[BuyerUploads] Delete error:", deleteError);
+        throw new Error("שגיאה במחיקת הקובץ: " + deleteError.message);
       }
+
+      console.log("[BuyerUploads] Delete successful");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["buyer-uploads", buyerId, propertyId] });
       toast.success("הקובץ נמחק בהצלחה");
     },
     onError: (error: Error) => {
+      console.error("[BuyerUploads] Delete mutation error:", error);
       toast.error(error.message || "שגיאה במחיקת הקובץ");
     },
   });
-
-  // Refresh signed URLs for existing uploads
-  const refreshSignedUrls = async (uploads: BuyerUpload[]): Promise<BuyerUpload[]> => {
-    const refreshedUploads: BuyerUpload[] = [];
-
-    for (const upload of uploads) {
-      const { data: signedUrlData, error } = await supabase.storage
-        .from("buyer-uploads")
-        .createSignedUrl(upload.storage_path, 60 * 60 * 24); // 24 hours
-
-      if (error) {
-        console.error("Error refreshing signed URL:", error);
-        refreshedUploads.push(upload);
-      } else {
-        refreshedUploads.push({
-          ...upload,
-          file_url: signedUrlData.signedUrl,
-        });
-      }
-    }
-
-    return refreshedUploads;
-  };
 
   return {
     uploads: query.data || [],
@@ -214,6 +243,5 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
     deleteFile: deleteMutation.mutate,
     isUploading: uploadMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    refreshSignedUrls,
   };
 }
