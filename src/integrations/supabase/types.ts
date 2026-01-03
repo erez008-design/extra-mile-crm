@@ -278,6 +278,7 @@ export type Database = {
           phone: string | null
           property_types: string[] | null
           required_features: string[] | null
+          status: string | null
           target_budget: number | null
           target_cities: string[] | null
           target_neighborhoods: string[] | null
@@ -304,6 +305,7 @@ export type Database = {
           phone?: string | null
           property_types?: string[] | null
           required_features?: string[] | null
+          status?: string | null
           target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
@@ -330,6 +332,7 @@ export type Database = {
           phone?: string | null
           property_types?: string[] | null
           required_features?: string[] | null
+          status?: string | null
           target_budget?: number | null
           target_cities?: string[] | null
           target_neighborhoods?: string[] | null
@@ -1004,6 +1007,8 @@ export type Database = {
         | "whatsapp_sent"
         | "file_uploaded"
         | "criteria_updated"
+        | "property_saved"
+        | "self_registered"
       app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
@@ -1143,6 +1148,8 @@ export const Constants = {
         "whatsapp_sent",
         "file_uploaded",
         "criteria_updated",
+        "property_saved",
+        "self_registered",
       ],
       app_role: ["admin", "agent", "client", "manager"],
     },
