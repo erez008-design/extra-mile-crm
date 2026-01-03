@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download, AlertTriangle, Pencil } from "lucide-react";
+import { LogOut, Building2, Users, Home, UserPlus, Upload, RefreshCw, MapPin, Trash2, Download, AlertTriangle, Pencil, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,8 @@ import { EditPropertyModal } from "@/components/EditPropertyModal";
 import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 import { subDays } from "date-fns";
 import { Settings2, ShoppingCart } from "lucide-react";
+import { AgentLeaderboard } from "@/components/admin/AgentLeaderboard";
+import { GrowthCharts } from "@/components/admin/GrowthCharts";
 
 interface User {
   id: string;
@@ -44,6 +46,7 @@ const Admin = () => {
   const [agents, setAgents] = useState<Array<{id: string; full_name: string | null; email: string}>>([]);
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
+  const [selectedStatsAgent, setSelectedStatsAgent] = useState<string>("all");
 
   useEffect(() => {
     checkAuth();
@@ -399,14 +402,51 @@ const Admin = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="users" dir="rtl">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+        <Tabs defaultValue="stats" dir="rtl">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsTrigger value="stats" className="flex items-center gap-1">
+              <BarChart3 className="w-4 h-4" />
+              סטטיסטיקות
+            </TabsTrigger>
             <TabsTrigger value="users">משתמשים</TabsTrigger>
             <TabsTrigger value="properties">נכסים</TabsTrigger>
             <TabsTrigger value="buyers">כל הקונים</TabsTrigger>
             <TabsTrigger value="technical">נתונים טכניים</TabsTrigger>
             <TabsTrigger value="neighborhoods">שכונות</TabsTrigger>
           </TabsList>
+
+          {/* Statistics Tab */}
+          <TabsContent value="stats">
+            <div className="space-y-6">
+              {/* Agent Filter */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <CardTitle className="text-base">סינון לפי סוכן</CardTitle>
+                    <Select value={selectedStatsAgent} onValueChange={setSelectedStatsAgent}>
+                      <SelectTrigger className="w-[220px]">
+                        <SelectValue placeholder="בחר סוכן" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">כל הסוכנים</SelectItem>
+                        {agents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.full_name || agent.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Growth Charts */}
+              <GrowthCharts selectedAgentId={selectedStatsAgent} />
+
+              {/* Agent Leaderboard */}
+              <AgentLeaderboard selectedAgentId={selectedStatsAgent} />
+            </div>
+          </TabsContent>
 
           <TabsContent value="users">
             <Card>
