@@ -10,7 +10,8 @@ export type ActivityActionType =
   | 'status_changed'
   | 'buyer_created'
   | 'match_found'
-  | 'whatsapp_sent';
+  | 'whatsapp_sent'
+  | 'file_uploaded';
 
 export interface ActivityLog {
   id: string;
@@ -140,6 +141,8 @@ export function getActivityIcon(actionType: ActivityActionType) {
       return { icon: 'Sparkles', color: 'text-pink-500', bgColor: 'bg-pink-500/10' };
     case 'whatsapp_sent':
       return { icon: 'MessageCircle', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' };
+    case 'file_uploaded':
+      return { icon: 'Camera', color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' };
     default:
       return { icon: 'Activity', color: 'text-muted-foreground', bgColor: 'bg-muted' };
   }
@@ -164,6 +167,8 @@ export function getActivityLabel(actionType: ActivityActionType) {
       return 'התאמה נמצאה';
     case 'whatsapp_sent':
       return 'WhatsApp נשלח';
+    case 'file_uploaded':
+      return 'מדיה נוספה';
     default:
       return 'פעילות';
   }

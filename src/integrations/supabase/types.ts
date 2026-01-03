@@ -189,6 +189,73 @@ export type Database = {
           },
         ]
       }
+      buyer_uploads: {
+        Row: {
+          buyer_id: string
+          buyer_property_id: string | null
+          caption: string | null
+          created_at: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          id: string
+          mime_type: string | null
+          property_id: string
+          storage_path: string
+        }
+        Insert: {
+          buyer_id: string
+          buyer_property_id?: string | null
+          caption?: string | null
+          created_at?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          property_id: string
+          storage_path: string
+        }
+        Update: {
+          buyer_id?: string
+          buyer_property_id?: string | null
+          caption?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          property_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_uploads_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_uploads_buyer_property_id_fkey"
+            columns: ["buyer_property_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_uploads_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyers: {
         Row: {
           budget_max: number | null
@@ -932,6 +999,7 @@ export type Database = {
         | "buyer_created"
         | "match_found"
         | "whatsapp_sent"
+        | "file_uploaded"
       app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
@@ -1069,6 +1137,7 @@ export const Constants = {
         "buyer_created",
         "match_found",
         "whatsapp_sent",
+        "file_uploaded",
       ],
       app_role: ["admin", "agent", "client", "manager"],
     },
