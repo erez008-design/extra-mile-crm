@@ -76,7 +76,6 @@ const Catalog = () => {
           *,
           property_images (url, is_primary)
         `)
-        .eq("status", "available")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

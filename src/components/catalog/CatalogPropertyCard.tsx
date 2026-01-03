@@ -1,29 +1,21 @@
 import { useState } from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
-  Home, 
-  Maximize, 
   Car, 
-  Sun, 
-  Shield, 
+  Bed, 
   ChevronLeft, 
   ChevronRight, 
-  Building2, 
-  HomeIcon, 
-  Castle, 
-  Warehouse,
   Heart,
-  Check
+  Maximize2
 } from "lucide-react";
-import { formatPrice } from "@/lib/formatPrice";
 
 interface CatalogPropertyCardProps {
   property: {
     id: string;
     address: string;
     city: string;
+    neighborhood: string | null;
     price: number | null;
     size_sqm: number | null;
     rooms: number | null;
@@ -42,15 +34,19 @@ interface CatalogPropertyCardProps {
   onSave: () => void;
 }
 
-// Property type configuration
-const propertyTypeConfig: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  apartment: { label: "דירה", icon: Building2, className: "bg-blue-500/90 text-white" },
-  private_house: { label: "בית פרטי", icon: HomeIcon, className: "bg-green-500/90 text-white" },
-  penthouse: { label: "פנטהאוז", icon: Castle, className: "bg-purple-500/90 text-white" },
-  semi_detached: { label: "דו-משפחתי", icon: Warehouse, className: "bg-orange-500/90 text-white" },
+// Property type labels in Hebrew
+const propertyTypeLabels: Record<string, string> = {
+  apartment: "דירה",
+  private_house: "בית",
+  penthouse: "פנטהאוז",
+  semi_detached: "דו-משפחתי",
+  cottage: "קוטג'",
+  garden_apartment: "גן",
+  mini_penthouse: "מיני פנטי'",
 };
 
 const CatalogPropertyCard = ({ property, isSaved, onSave }: CatalogPropertyCardProps) => {
+  const navigate = useNavigate();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
   const images = property.property_images.length > 0 
@@ -70,53 +66,82 @@ const CatalogPropertyCard = ({ property, isSaved, onSave }: CatalogPropertyCardP
     setSelectedImageIndex(prev => prev < sortedImages.length - 1 ? prev + 1 : 0);
   };
 
-  // Get property type configuration
+  // Get property type label
   const propertyType = property.property_type || "apartment";
-  const typeConfig = propertyTypeConfig[propertyType] || propertyTypeConfig.apartment;
-  const TypeIcon = typeConfig.icon;
+  const typeLabel = propertyTypeLabels[propertyType] || propertyTypeLabels.apartment;
+
+  // Format price with commas
+  const formatPrice = (price: number) => {
+    return price.toLocaleString('he-IL');
+  };
+
+  // Build location string: City | Neighborhood | Type
+  const locationParts = [
+    property.city,
+    property.neighborhood || undefined,
+    typeLabel
+  ].filter(Boolean);
+  const locationString = locationParts.join(" | ");
+
+  // Parking text
+  const getParkingText = () => {
+    if (property.parking_spots === null || property.parking_spots === 0) {
+      return "אין";
+    }
+    return "יש";
+  };
+
+  const handleViewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Navigate to property details or trigger save for registration
+    navigate(`/properties/${property.id}`);
+  };
 
   return (
-    <Card className="overflow-hidden hover:shadow-medium transition-all duration-300 group">
-      <div className="relative h-48 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+      {/* Image Section */}
+      <div className="relative h-52 overflow-hidden group">
         <img
           src={currentImage}
           alt={property.address}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover"
         />
         
-        {/* Property Type Badge - Top Left */}
-        <Badge className={`absolute top-3 left-3 gap-1 ${typeConfig.className}`}>
-          <TypeIcon className="w-3 h-3" />
-          {typeConfig.label}
-        </Badge>
+        {/* Heart/Save Icon - Top Right of Image */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSave();
+          }}
+          className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+            isSaved 
+              ? "bg-red-500 text-white" 
+              : "bg-white/90 text-gray-600 hover:bg-white hover:text-red-500"
+          }`}
+          aria-label={isSaved ? "נשמר" : "שמור ליומן"}
+        >
+          <Heart className={`w-5 h-5 ${isSaved ? "fill-current" : ""}`} />
+        </button>
         
-        {/* City Badge - Top Right */}
-        <Badge className="absolute top-3 right-3 bg-accent text-accent-foreground">
-          {property.city}
-        </Badge>
-        
-        {/* Image counter and navigation */}
+        {/* Image Navigation */}
         {sortedImages.length > 1 && (
           <>
-            <Badge className="absolute top-10 left-3 bg-black/60 text-white text-xs">
-              {selectedImageIndex + 1} / {sortedImages.length}
-            </Badge>
             <button
               onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
               aria-label="תמונה קודמת"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
               aria-label="תמונה הבאה"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
             {/* Dots indicator */}
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
               {sortedImages.map((_, idx) => (
                 <button
                   key={idx}
@@ -124,8 +149,8 @@ const CatalogPropertyCard = ({ property, isSaved, onSave }: CatalogPropertyCardP
                     e.stopPropagation();
                     setSelectedImageIndex(idx);
                   }}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    selectedImageIndex === idx ? "bg-white w-3" : "bg-white/50"
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    selectedImageIndex === idx ? "bg-white" : "bg-white/50"
                   }`}
                 />
               ))}
@@ -134,86 +159,58 @@ const CatalogPropertyCard = ({ property, isSaved, onSave }: CatalogPropertyCardP
         )}
       </div>
       
-      <CardContent className="p-4">
-        <div className="mb-3">
-          <h3 className="font-semibold text-lg mb-1 line-clamp-1">
-            {property.address || "נכס"}
-          </h3>
-          {property.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {property.description}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2 md:gap-3 text-sm text-muted-foreground mb-3 flex-wrap">
-          {property.rooms && (
-            <div className="flex items-center gap-1">
-              <Home className="w-4 h-4" />
-              <span>{property.rooms} חדרים</span>
-            </div>
-          )}
-          {property.size_sqm && (
-            <div className="flex items-center gap-1">
-              <Maximize className="w-4 h-4" />
-              <span>{property.size_sqm} מ"ר</span>
-            </div>
-          )}
-          {/* Show plot size for houses */}
-          {(propertyType === "private_house" || propertyType === "semi_detached") && property.plot_size_sqm && (
-            <div className="flex items-center gap-1">
-              <Maximize className="w-4 h-4 text-green-600" />
-              <span>מגרש: {property.plot_size_sqm} מ"ר</span>
-            </div>
-          )}
-          {/* Show floor for apartments/penthouses */}
-          {(propertyType === "apartment" || propertyType === "penthouse") && property.floor !== null && (
-            <div className="flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded">
-              קומה {property.floor}{property.total_floors ? ` מתוך ${property.total_floors}` : ''}
-            </div>
-          )}
-          {property.parking_spots !== null && property.parking_spots > 0 && (
-            <div className="flex items-center gap-1">
-              <Car className="w-4 h-4" />
-              <span>{property.parking_spots}</span>
-            </div>
-          )}
-          {property.has_sun_balcony && (
-            <Sun className="w-4 h-4" />
-          )}
-          {property.has_safe_room && (
-            <Shield className="w-4 h-4" />
-          )}
-        </div>
-        
-        <div className="text-2xl font-bold text-primary">
-          {property.price ? formatPrice(property.price) : "לא צוין"}
-        </div>
-      </CardContent>
+      {/* Location Info Row */}
+      <div className="px-4 py-3 border-b border-gray-100">
+        <p className="text-center text-[#00a0e3] font-medium text-base">
+          {locationString}
+        </p>
+      </div>
       
-      <CardFooter className="p-4 pt-0">
+      {/* Icons Row */}
+      <div className="px-4 py-3 flex items-center justify-center gap-6 border-b border-gray-100">
+        {/* Parking */}
+        <div className="flex flex-col items-center gap-1">
+          <Car className="w-6 h-6 text-[#00a0e3]" />
+          <span className="text-xs text-gray-600">{getParkingText()}</span>
+        </div>
+        
+        {/* Area */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="relative">
+            <Maximize2 className="w-6 h-6 text-[#00a0e3]" />
+          </div>
+          <span className="text-xs text-gray-600">
+            {property.size_sqm ? `${property.size_sqm} מ"ר` : "-"}
+          </span>
+        </div>
+        
+        {/* Rooms */}
+        <div className="flex flex-col items-center gap-1">
+          <Bed className="w-6 h-6 text-[#00a0e3]" />
+          <span className="text-xs text-gray-600">
+            {property.rooms ? `${property.rooms} חד'` : "-"}
+          </span>
+        </div>
+      </div>
+      
+      {/* Bottom Bar - Button & Price */}
+      <div className="px-4 py-3 flex items-center justify-between">
+        {/* View Button */}
         <Button 
-          className="w-full h-11 gap-2" 
-          variant={isSaved ? "secondary" : "default"}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSave();
-          }}
+          onClick={handleViewClick}
+          className="bg-[#00a0e3] hover:bg-[#0090cc] text-white font-medium px-6 py-2 h-auto rounded-md"
         >
-          {isSaved ? (
-            <>
-              <Check className="w-4 h-4" />
-              נשמר ביומן שלי
-            </>
-          ) : (
-            <>
-              <Heart className="w-4 h-4" />
-              שמור ליומן שלי
-            </>
-          )}
+          לצפייה
         </Button>
-      </CardFooter>
-    </Card>
+        
+        {/* Price */}
+        <div className="text-left">
+          <span className="text-[#00a0e3] font-bold text-xl">
+            {property.price ? `₪ ${formatPrice(property.price)}` : "לא צוין"}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
