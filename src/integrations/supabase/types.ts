@@ -622,6 +622,7 @@ export type Database = {
           has_sun_balcony: boolean | null
           id: string
           levels_count: number | null
+          listing_agent_name: string | null
           neighborhood: string | null
           parking_spots: number | null
           plot_size_sqm: number | null
@@ -653,6 +654,7 @@ export type Database = {
           has_sun_balcony?: boolean | null
           id?: string
           levels_count?: number | null
+          listing_agent_name?: string | null
           neighborhood?: string | null
           parking_spots?: number | null
           plot_size_sqm?: number | null
@@ -684,6 +686,7 @@ export type Database = {
           has_sun_balcony?: boolean | null
           id?: string
           levels_count?: number | null
+          listing_agent_name?: string | null
           neighborhood?: string | null
           parking_spots?: number | null
           plot_size_sqm?: number | null
@@ -1000,6 +1003,7 @@ export type Database = {
         | "match_found"
         | "whatsapp_sent"
         | "file_uploaded"
+        | "criteria_updated"
       app_role: "admin" | "agent" | "client" | "manager"
     }
     CompositeTypes: {
@@ -1138,6 +1142,7 @@ export const Constants = {
         "match_found",
         "whatsapp_sent",
         "file_uploaded",
+        "criteria_updated",
       ],
       app_role: ["admin", "agent", "client", "manager"],
     },

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { LogOut, Building2, Plus, Upload, X, Users, Send, RefreshCw, FileText, Loader2, Trash2, Pencil, AlertTriangle } from "lucide-react";
+import { LogOut, Building2, Plus, Upload, X, Users, Send, RefreshCw, FileText, Loader2, Trash2, Pencil, AlertTriangle, Zap } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,7 @@ import { BuyerManagement } from "@/components/BuyerManagement";
 import { BuyerMessagesTab } from "@/components/BuyerMessagesTab";
 import { ExclusionAnalyticsChart } from "@/components/ExclusionAnalyticsChart";
 import { EditPropertyModal } from "@/components/EditPropertyModal";
+import { CollaborativeWizard } from "@/components/buyers/CollaborativeWizard";
 import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 import { subDays } from "date-fns";
 
@@ -49,6 +50,7 @@ const Agent = () => {
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCollaborativeWizard, setShowCollaborativeWizard] = useState(false);
   
   // Removed old invite system - now using buyer management
 
@@ -998,6 +1000,26 @@ const Agent = () => {
           onOpenChange={setShowEditModal}
           onSaved={fetchProperties}
         />
+
+        {/* Collaborative Wizard */}
+        <CollaborativeWizard
+          open={showCollaborativeWizard}
+          onOpenChange={setShowCollaborativeWizard}
+          agentId={currentUserId || ""}
+          onComplete={() => {
+            // Refresh data if needed
+          }}
+        />
+
+        {/* FAB Button */}
+        <Button
+          onClick={() => setShowCollaborativeWizard(true)}
+          className="fixed bottom-6 left-6 h-14 px-5 rounded-full shadow-lg bg-primary hover:bg-primary/90 z-50"
+          size="lg"
+        >
+          <Zap className="w-5 h-5 ml-2" />
+          קונה חדש - 30 שניות
+        </Button>
       </main>
     </div>
   );
