@@ -10,11 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowRight, MapPin, Home, Maximize, FileText, Heart, Eye, EyeOff, Save, MessageCircle, Building, Car, Bath, Calendar, Thermometer, Info, ChevronLeft, ChevronRight, GitCompare } from "lucide-react";
+import { ArrowRight, MapPin, Home, Maximize, FileText, Heart, Eye, EyeOff, Save, MessageCircle, Building, Car, Bath, Calendar, Thermometer, Info, ChevronLeft, ChevronRight, GitCompare, Camera, Lock } from "lucide-react";
 import { useGetExtendedProperty } from "@/hooks/usePropertyExtendedDetails";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
+import { useBuyerUploads } from "@/hooks/useBuyerUploads";
+import { BuyerFileUploader } from "@/components/buyers/BuyerFileUploader";
+import { BuyerUploadsGallery } from "@/components/buyers/BuyerUploadsGallery";
 
 interface Property {
   id: string;
@@ -76,6 +79,16 @@ const BuyerPropertyDetails = () => {
   
   // Extended details
   const { data: extendedDetails, isLoading: loadingExtended } = useGetExtendedProperty(propertyId);
+  
+  // Buyer uploads (private files)
+  const {
+    uploads,
+    isLoading: loadingUploads,
+    uploadFile,
+    deleteFile,
+    isUploading,
+    isDeleting,
+  } = useBuyerUploads(buyerId, propertyId);
 
   useEffect(() => {
     if (buyerId && propertyId) {
@@ -553,6 +566,38 @@ const BuyerPropertyDetails = () => {
                   <Save className="w-4 h-4 ml-2" />
                   {savingNote ? "שומר..." : "שמור הערה"}
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Private Uploads Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-primary" />
+                  הצילומים והערות האישיות שלי
+                </CardTitle>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2 mt-2">
+                  <Lock className="w-3 h-3" />
+                  <span>הקבצים הללו פרטיים וזמינים רק עבורך</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <BuyerFileUploader
+                  onUpload={(file, caption) =>
+                    uploadFile({
+                      file,
+                      caption,
+                      buyerPropertyId: buyerProperty?.id,
+                    })
+                  }
+                  isUploading={isUploading}
+                />
+                <BuyerUploadsGallery
+                  uploads={uploads}
+                  onDelete={deleteFile}
+                  isDeleting={isDeleting}
+                  isLoading={loadingUploads}
+                />
               </CardContent>
             </Card>
           </div>
