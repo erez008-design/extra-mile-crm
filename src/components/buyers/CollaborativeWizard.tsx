@@ -12,6 +12,7 @@ import { Loader2, Phone, MapPin, Home, Send, ArrowLeft, ArrowRight, Check, X, Us
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/formatPrice";
 import { useNeighborhoods } from "@/hooks/useNeighborhoods";
+import { sanitizeIsraeliPhone } from "@/lib/phoneUtils";
 
 // 100MB max file size for video support
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -62,10 +63,6 @@ interface CollaborativeWizardProps {
   onComplete: () => void;
 }
 
-const cleanPhone = (phone: string): string => {
-  return phone.replace(/\D/g, "");
-};
-
 export const CollaborativeWizard = ({ open, onOpenChange, agentId, onComplete }: CollaborativeWizardProps) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -112,7 +109,7 @@ export const CollaborativeWizard = ({ open, onOpenChange, agentId, onComplete }:
   }, [open]);
 
   const handlePhoneCheck = async () => {
-    const cleaned = cleanPhone(phoneInput);
+    const cleaned = sanitizeIsraeliPhone(phoneInput);
     if (cleaned.length < 9) {
       toast.error("מספר טלפון לא תקין");
       return;
@@ -478,8 +475,8 @@ export const CollaborativeWizard = ({ open, onOpenChange, agentId, onComplete }:
                   type="tel"
                   inputMode="numeric"
                   value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="050-0000000"
+                  onChange={(e) => setPhoneInput(sanitizeIsraeliPhone(e.target.value))}
+                  placeholder="0501234567"
                   className="text-2xl text-center h-14 tracking-wider"
                   dir="ltr"
                   autoFocus

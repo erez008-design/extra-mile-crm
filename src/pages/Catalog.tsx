@@ -14,6 +14,7 @@ import { Search, Filter, X, Store, Heart } from "lucide-react";
 import CatalogPropertyCard from "@/components/catalog/CatalogPropertyCard";
 import RegistrationDrawer from "@/components/catalog/RegistrationDrawer";
 import MultiSelectFilter from "@/components/ui/MultiSelectFilter";
+import { InstallAppBanner } from "@/components/InstallAppBanner";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 
 interface Property {
@@ -297,6 +298,7 @@ const Catalog = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <InstallAppBanner variant="button" />
             {registeredBuyerId ? (
               <Button
                 variant="outline"

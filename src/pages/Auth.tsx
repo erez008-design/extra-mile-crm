@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Building2, Loader2 } from "lucide-react";
 import { loginSchema } from "@/lib/validations";
 import logoImage from "@/assets/extramile-logo.jpg";
+import { sanitizeIsraeliPhone } from "@/lib/phoneUtils";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -263,8 +264,9 @@ const Auth = () => {
                   <Input
                     id="signup-phone"
                     type="tel"
+                    placeholder="0501234567"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(sanitizeIsraeliPhone(e.target.value))}
                     disabled={loading}
                     dir="ltr"
                   />

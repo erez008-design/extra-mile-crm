@@ -8,6 +8,7 @@ import { Plus, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { sanitizeIsraeliPhone } from "@/lib/phoneUtils";
 
 interface AddPropertyDialogProps {
   buyerId: string;
@@ -222,8 +223,9 @@ export const AddPropertyDialog = ({ buyerId, onPropertyAdded }: AddPropertyDialo
             <Input
               id="contactPhone"
               type="tel"
+              placeholder="0501234567"
               value={formData.contactPhone}
-              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, contactPhone: sanitizeIsraeliPhone(e.target.value) })}
             />
           </div>
           <div className="space-y-2">

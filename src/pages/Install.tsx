@@ -72,8 +72,12 @@ export default function Install() {
     <div className="min-h-screen-safe bg-background flex items-center justify-center p-4 safe-all" dir="rtl">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-medium">
-            <img src="/icons/icon-192x192.png" alt="EXTRAMILE" className="w-full h-full object-cover" />
+          <div className="mx-auto w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-medium bg-white flex items-center justify-center p-2">
+            <img 
+              src="/icons/extramile-logo-source.jpg" 
+              alt="EXTRAMILE" 
+              className="w-full h-full object-contain" 
+            />
           </div>
           <CardTitle className="text-xl">התקן את EXTRAMILE</CardTitle>
           <p className="text-muted-foreground text-sm mt-2">
