@@ -1,3 +1,8 @@
+/**
+ * Public Property Catalog - Cache Bust v2026.01.04.1
+ * Displays all properties without status filter
+ * Uses optimized primary-image-only query
+ */
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

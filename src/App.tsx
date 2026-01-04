@@ -1,3 +1,7 @@
+/**
+ * App.tsx - Cache Bust Build v2026.01.04.1
+ * Routes include public /catalog and /catalog/:propertyId
+ */
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
