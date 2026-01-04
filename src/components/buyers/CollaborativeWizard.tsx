@@ -609,18 +609,24 @@ export const CollaborativeWizard = ({ open, onOpenChange, agentId, onComplete }:
                     <div
                       key={feature.value}
                       className={cn(
-                        "flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-colors",
+                        "flex items-center gap-2 p-2.5 border rounded-lg transition-colors min-h-[48px]",
                         formData.required_features.includes(feature.value)
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-muted/50"
                       )}
-                      onClick={() => toggleFeature(feature.value)}
                     >
                       <Checkbox
+                        id={`wizard-feature-${feature.value}`}
                         checked={formData.required_features.includes(feature.value)}
                         onCheckedChange={() => toggleFeature(feature.value)}
+                        className="h-5 w-5"
                       />
-                      <Label className="cursor-pointer text-sm">{feature.label}</Label>
+                      <Label 
+                        htmlFor={`wizard-feature-${feature.value}`}
+                        className="cursor-pointer text-sm flex-1"
+                      >
+                        {feature.label}
+                      </Label>
                     </div>
                   ))}
                 </div>

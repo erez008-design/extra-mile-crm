@@ -406,18 +406,24 @@ export const BuyerFiltersModal = ({
               {REQUIRED_FEATURES_OPTIONS.map((feature) => (
                 <div
                   key={feature.value}
-                  className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 p-3 border rounded-lg transition-colors min-h-[48px] ${
                     filters.required_features?.includes(feature.value)
                       ? "bg-primary/10 border-primary"
                       : "hover:bg-muted/50"
                   }`}
-                  onClick={() => toggleFeature(feature.value)}
                 >
                   <Checkbox
+                    id={`feature-${feature.value}`}
                     checked={filters.required_features?.includes(feature.value) || false}
                     onCheckedChange={() => toggleFeature(feature.value)}
+                    className="h-5 w-5"
                   />
-                  <Label className="cursor-pointer text-sm">{feature.label}</Label>
+                  <Label 
+                    htmlFor={`feature-${feature.value}`}
+                    className="cursor-pointer text-sm flex-1"
+                  >
+                    {feature.label}
+                  </Label>
                 </div>
               ))}
             </div>
