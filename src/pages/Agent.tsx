@@ -543,13 +543,14 @@ const Agent = () => {
                 size="sm" 
                 onClick={handleSyncFromWebtiv}
                 disabled={loading}
+                title="סנכרון מ-Webtiv"
               >
-                <Upload className="w-4 h-4 ml-2" />
-                סנכרון מ-Webtiv
+                <Upload className="w-4 h-4 sm:ml-2" />
+                <span className="hidden sm:inline">סנכרון מ-Webtiv</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 ml-2" />
-                יציאה
+              <Button variant="outline" size="sm" onClick={handleLogout} title="יציאה">
+                <LogOut className="w-4 h-4 sm:ml-2" />
+                <span className="hidden sm:inline">יציאה</span>
               </Button>
             </div>
           </div>
@@ -557,13 +558,13 @@ const Agent = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="add" dir="rtl">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="add">הוספת נכס</TabsTrigger>
-            <TabsTrigger value="manage">ניהול נכסים</TabsTrigger>
-            <TabsTrigger value="buyers">ניהול קונים</TabsTrigger>
-            <TabsTrigger value="messages">הודעות מקונים</TabsTrigger>
-            <TabsTrigger value="analytics">אנליטיקס</TabsTrigger>
+        <Tabs defaultValue="buyers" dir="rtl">
+          <TabsList className="flex w-full overflow-x-auto gap-1 mb-6 pb-1">
+            <TabsTrigger value="buyers" className="whitespace-nowrap flex-shrink-0">ניהול קונים</TabsTrigger>
+            <TabsTrigger value="messages" className="whitespace-nowrap flex-shrink-0">הודעות</TabsTrigger>
+            <TabsTrigger value="manage" className="whitespace-nowrap flex-shrink-0">ניהול נכסים</TabsTrigger>
+            <TabsTrigger value="add" className="whitespace-nowrap flex-shrink-0">הוספת נכס</TabsTrigger>
+            <TabsTrigger value="analytics" className="whitespace-nowrap flex-shrink-0">אנליטיקס</TabsTrigger>
           </TabsList>
 
           <TabsContent value="add">
