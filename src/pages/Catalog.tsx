@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, X, Store, Heart } from "lucide-react";
 import CatalogPropertyCard from "@/components/catalog/CatalogPropertyCard";
 import RegistrationDrawer from "@/components/catalog/RegistrationDrawer";
+import MultiSelectFilter from "@/components/ui/MultiSelectFilter";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 
 interface Property {
@@ -33,14 +33,30 @@ interface Property {
   property_images: Array<{ url: string; is_primary: boolean }>;
 }
 
+// Filter options
+const PRICE_OPTIONS = [
+  { value: "0-1500000", label: "עד ₪1.5M" },
+  { value: "1500000-2500000", label: "₪1.5M - ₪2.5M" },
+  { value: "2500000-4000000", label: "₪2.5M - ₪4M" },
+  { value: "4000000-6000000", label: "₪4M - ₪6M" },
+  { value: "6000000-999999999", label: "מעל ₪6M" },
+];
+
+const ROOMS_OPTIONS = [
+  { value: "2", label: "2 חדרים" },
+  { value: "3", label: "3 חדרים" },
+  { value: "4", label: "4 חדרים" },
+  { value: "5", label: "5 חדרים" },
+  { value: "6+", label: "6+ חדרים" },
+];
+
 const Catalog = () => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCity, setSearchCity] = useState("");
-  const [priceRange, setPriceRange] = useState<string>("all");
-  const [roomsFilter, setRoomsFilter] = useState<string>("all");
-  const [showFilters, setShowFilters] = useState(false);
+  const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   
   // Registration state
   const [showRegistration, setShowRegistration] = useState(false);
@@ -70,16 +86,37 @@ const Catalog = () => {
   const fetchProperties = async () => {
     setLoading(true);
     try {
+      // Fetch properties with only primary images to avoid row limit issues
       const { data, error } = await supabase
         .from("properties")
         .select(`
-          *,
-          property_images (url, is_primary)
+          id, address, city, neighborhood, price, size_sqm, rooms,
+          floor, total_floors, has_elevator, has_balcony, has_sun_balcony,
+          parking_spots, has_safe_room, property_type, plot_size_sqm,
+          description, agent_id
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setProperties(data || []);
+      
+      // Fetch primary images separately
+      const propertyIds = data?.map(p => p.id) || [];
+      const { data: images } = await supabase
+        .from("property_images")
+        .select("property_id, url, is_primary")
+        .in("property_id", propertyIds)
+        .eq("is_primary", true);
+
+      // Map images to properties
+      const imageMap = new Map(images?.map(img => [img.property_id, img]) || []);
+      const propertiesWithImages = data?.map(p => ({
+        ...p,
+        property_images: imageMap.has(p.id) 
+          ? [imageMap.get(p.id)!] 
+          : []
+      })) || [];
+      
+      setProperties(propertiesWithImages);
     } catch (error) {
       console.error("Error fetching properties:", error);
     } finally {
@@ -109,7 +146,7 @@ const Catalog = () => {
     return [...new Set(cities)].sort();
   }, [properties]);
 
-  // Filter properties
+  // Filter properties with multi-select
   const filteredProperties = useMemo(() => {
     return properties.filter(property => {
       // City filter
@@ -117,27 +154,29 @@ const Catalog = () => {
         return false;
       }
 
-      // Price filter
-      if (priceRange !== "all" && property.price) {
-        const [min, max] = priceRange.split("-").map(Number);
-        if (property.price < min || (max && property.price > max)) {
-          return false;
-        }
+      // Price filter - Multi-select
+      if (selectedPriceRanges.length > 0 && property.price) {
+        const matchesAnyPriceRange = selectedPriceRanges.some(range => {
+          const [min, max] = range.split("-").map(Number);
+          return property.price! >= min && property.price! <= max;
+        });
+        if (!matchesAnyPriceRange) return false;
       }
 
-      // Rooms filter
-      if (roomsFilter !== "all" && property.rooms) {
-        const minRooms = parseInt(roomsFilter);
-        if (roomsFilter.includes("+")) {
-          if (property.rooms < minRooms) return false;
-        } else {
-          if (property.rooms !== minRooms) return false;
-        }
+      // Rooms filter - Multi-select
+      if (selectedRooms.length > 0 && property.rooms) {
+        const matchesAnyRoomCount = selectedRooms.some(roomOption => {
+          if (roomOption === "6+") {
+            return property.rooms! >= 6;
+          }
+          return property.rooms === parseInt(roomOption);
+        });
+        if (!matchesAnyRoomCount) return false;
       }
 
       return true;
     });
-  }, [properties, searchCity, priceRange, roomsFilter]);
+  }, [properties, searchCity, selectedPriceRanges, selectedRooms]);
 
   // Handle save property action
   const handleSaveProperty = async (propertyId: string) => {
@@ -229,14 +268,14 @@ const Catalog = () => {
 
   const clearFilters = () => {
     setSearchCity("");
-    setPriceRange("all");
-    setRoomsFilter("all");
+    setSelectedPriceRanges([]);
+    setSelectedRooms([]);
   };
 
   const activeFiltersCount = [
     searchCity,
-    priceRange !== "all",
-    roomsFilter !== "all"
+    selectedPriceRanges.length > 0,
+    selectedRooms.length > 0
   ].filter(Boolean).length;
 
   return (
@@ -295,35 +334,22 @@ const Catalog = () => {
             />
           </div>
 
-          {/* Price Filter */}
-          <Select value={priceRange} onValueChange={setPriceRange}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="טווח מחירים" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל המחירים</SelectItem>
-              <SelectItem value="0-1500000">עד ₪1.5M</SelectItem>
-              <SelectItem value="1500000-2500000">₪1.5M - ₪2.5M</SelectItem>
-              <SelectItem value="2500000-4000000">₪2.5M - ₪4M</SelectItem>
-              <SelectItem value="4000000-6000000">₪4M - ₪6M</SelectItem>
-              <SelectItem value="6000000-999999999">מעל ₪6M</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Price Filter - Multi-Select */}
+          <MultiSelectFilter
+            label="טווח מחירים"
+            options={PRICE_OPTIONS}
+            selected={selectedPriceRanges}
+            onChange={setSelectedPriceRanges}
+          />
 
-          {/* Rooms Filter */}
-          <Select value={roomsFilter} onValueChange={setRoomsFilter}>
-            <SelectTrigger className="w-full md:w-40">
-              <SelectValue placeholder="חדרים" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל הגדלים</SelectItem>
-              <SelectItem value="2">2 חדרים</SelectItem>
-              <SelectItem value="3">3 חדרים</SelectItem>
-              <SelectItem value="4">4 חדרים</SelectItem>
-              <SelectItem value="5">5 חדרים</SelectItem>
-              <SelectItem value="6+">6+ חדרים</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Rooms Filter - Multi-Select */}
+          <MultiSelectFilter
+            label="חדרים"
+            options={ROOMS_OPTIONS}
+            selected={selectedRooms}
+            onChange={setSelectedRooms}
+            className="md:w-40"
+          />
 
           {activeFiltersCount > 0 && (
             <Button variant="ghost" size="icon" onClick={clearFilters}>

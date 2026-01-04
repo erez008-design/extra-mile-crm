@@ -93,8 +93,8 @@ const CatalogPropertyCard = ({ property, isSaved, onSave }: CatalogPropertyCardP
 
   const handleViewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to property details or trigger save for registration
-    navigate(`/properties/${property.id}`);
+    // Navigate to public property details page
+    navigate(`/catalog/${property.id}`);
   };
 
   return (
