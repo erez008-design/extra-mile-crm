@@ -23,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Buyers from "./pages/Buyers";
 import FollowUps from "./pages/FollowUps";
 import Catalog from "./pages/Catalog";
+import CatalogPropertyDetails from "./pages/CatalogPropertyDetails";
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
@@ -51,6 +52,7 @@ const App = () => {
               <Route path="/buyers" element={<Buyers />} />
               <Route path="/follow-ups" element={<FollowUps />} />
               <Route path="/catalog" element={<Catalog />} />
+              <Route path="/catalog/:propertyId" element={<CatalogPropertyDetails />} />
               <Route path="/install" element={<Install />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
