@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { User, Phone, Loader2, Sparkles } from "lucide-react";
+import { sanitizeIsraeliPhone, isValidIsraeliPhone } from "@/lib/phoneUtils";
 
 interface RegistrationDrawerProps {
   open: boolean;
@@ -27,16 +28,10 @@ const RegistrationDrawer = ({ open, onOpenChange, onComplete, propertyId }: Regi
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ fullName?: string; phone?: string }>({});
 
-  // Clean phone number (remove non-digits except +)
-  const cleanPhone = (value: string) => {
-    return value.replace(/[^\d+]/g, "");
-  };
-
-  // Validate phone number (Israeli format)
-  const isValidPhone = (value: string) => {
-    const cleaned = cleanPhone(value);
-    // Israeli mobile: 05X-XXXXXXX (10 digits) or +972-5X-XXXXXXX
-    return /^0[5][0-9]{8}$/.test(cleaned) || /^\+972[5][0-9]{8}$/.test(cleaned);
+  // Handle phone input with real-time sanitization
+  const handlePhoneChange = (value: string) => {
+    const sanitized = sanitizeIsraeliPhone(value);
+    setPhone(sanitized);
   };
 
   // Validate form
@@ -51,7 +46,7 @@ const RegistrationDrawer = ({ open, onOpenChange, onComplete, propertyId }: Regi
 
     if (!phone.trim()) {
       newErrors.phone = "נא להזין מספר טלפון";
-    } else if (!isValidPhone(phone)) {
+    } else if (!isValidIsraeliPhone(phone)) {
       newErrors.phone = "מספר טלפון לא תקין";
     }
 
@@ -65,7 +60,7 @@ const RegistrationDrawer = ({ open, onOpenChange, onComplete, propertyId }: Regi
     if (!validate()) return;
 
     setLoading(true);
-    const cleanedPhone = cleanPhone(phone);
+    const cleanedPhone = sanitizeIsraeliPhone(phone);
 
     try {
       // Check if buyer already exists with this phone
@@ -188,9 +183,9 @@ const RegistrationDrawer = ({ open, onOpenChange, onComplete, propertyId }: Regi
             <Input
               id="phone"
               type="tel"
-              placeholder="050-1234567"
+              placeholder="0501234567"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               className={errors.phone ? "border-destructive" : ""}
               autoComplete="tel"
               dir="ltr"

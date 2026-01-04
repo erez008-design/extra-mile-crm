@@ -18,6 +18,7 @@ import { useRealtimeMatches } from "@/hooks/useRealtimeMatches";
 import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { safeDateDisplay } from "@/lib/safeDate";
+import { sanitizeIsraeliPhone } from "@/lib/phoneUtils";
 interface Buyer {
   id: string;
   full_name: string;
@@ -823,7 +824,7 @@ export const BuyerManagement = () => {
           </CardTitle>
           <Dialog open={showAddBuyer} onOpenChange={setShowAddBuyer}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-[#1a7fc1] hover:bg-[#156ba3] text-white rounded-2xl px-5">
                 <UserPlus className="w-4 h-4 ml-2" />
                 הוסף קונה + נכסים
               </Button>
@@ -847,8 +848,8 @@ export const BuyerManagement = () => {
                   <Input
                     id="phone"
                     value={newBuyer.phone}
-                    onChange={(e) => setNewBuyer({ ...newBuyer, phone: e.target.value })}
-                    placeholder="05X-XXXXXXX"
+                    onChange={(e) => setNewBuyer({ ...newBuyer, phone: sanitizeIsraeliPhone(e.target.value) })}
+                    placeholder="0501234567"
                     dir="ltr"
                   />
                 </div>
@@ -910,7 +911,7 @@ export const BuyerManagement = () => {
                 const stats = getBuyerStats(buyer);
                 const temp = getBuyerTemperature(buyer);
                 return (
-                  <Card key={buyer.id} className="p-4">
+                  <Card key={buyer.id} className="p-4 shadow-md hover:shadow-lg transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <div 
                         className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
@@ -921,9 +922,14 @@ export const BuyerManagement = () => {
                           <Badge variant="outline" className={temp.color}>
                             {temp.label}
                           </Badge>
-                          {/* Missing profile indicator */}
-                          {!buyer.global_liked_profile && !buyer.global_disliked_profile && (
-                            <Badge variant="outline" className="text-red-600 border-red-400 bg-red-50 dark:bg-red-950/30 gap-1">
+                          {/* AI Ready badge - premium gradient styling */}
+                          {buyer.global_liked_profile || buyer.global_disliked_profile ? (
+                            <Badge className="bg-gradient-to-r from-purple-500 to-blue-500 text-white border-0 gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              AI Ready
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-amber-600 border-amber-400 bg-amber-50 dark:bg-amber-950/30 gap-1">
                               <Sparkles className="w-3 h-3" />
                               חסר פרופיל AI
                             </Badge>
@@ -942,6 +948,7 @@ export const BuyerManagement = () => {
                             setSelectedBuyerForProperties(buyer.id);
                             setShowAddPropertiesToBuyer(true);
                           }}
+                          className="rounded-xl"
                         >
                           <Plus className="w-4 h-4 ml-1" />
                           הוסף נכסים
@@ -951,18 +958,19 @@ export const BuyerManagement = () => {
                           variant="outline" 
                           onClick={() => handleAIMatching(buyer.id)}
                           disabled={matchingLoading && matchingBuyerId === buyer.id}
+                          className="rounded-xl"
                         >
                           <Wand2 className="w-4 h-4 ml-1" />
                           {matchingLoading && matchingBuyerId === buyer.id ? "מחפש..." : "מצא נכסים"}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => copyBuyerLink(buyer.id)}>
+                        <Button size="sm" variant="outline" onClick={() => copyBuyerLink(buyer.id)} className="rounded-xl">
                           <Copy className="w-4 h-4 ml-1" />
                           העתק קישור
                         </Button>
                         <Button 
                           size="sm" 
                           onClick={() => handleSendWhatsApp(buyer)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl px-4"
                         >
                           <MessageCircle className="w-4 h-4 ml-1" />
                           שלח בוואטסאפ
@@ -971,7 +979,7 @@ export const BuyerManagement = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => setEditingFiltersBuyerId(buyer.id)}
-                          className="relative"
+                          className="relative rounded-xl"
                         >
                           <Filter className="w-4 h-4 ml-1" />
                           עריכת פילטרים

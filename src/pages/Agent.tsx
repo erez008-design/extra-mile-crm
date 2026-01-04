@@ -21,6 +21,7 @@ import { BuyerMessagesTab } from "@/components/BuyerMessagesTab";
 import { ExclusionAnalyticsChart } from "@/components/ExclusionAnalyticsChart";
 import { EditPropertyModal } from "@/components/EditPropertyModal";
 import { CollaborativeWizard } from "@/components/buyers/CollaborativeWizard";
+import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { isPropertyIncomplete } from "@/hooks/usePropertyEnrichment";
 import { subDays } from "date-fns";
 
@@ -558,6 +559,9 @@ const Agent = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* PWA Install Banner */}
+        <InstallAppBanner className="mb-6" />
+
         <Tabs defaultValue="buyers" dir="rtl">
           <TabsList className="flex w-full overflow-x-auto gap-1 mb-6 pb-1">
             <TabsTrigger value="buyers" className="whitespace-nowrap flex-shrink-0">ניהול קונים</TabsTrigger>
