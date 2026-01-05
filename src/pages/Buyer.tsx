@@ -27,6 +27,7 @@ import {
   X,
   AlertCircle,
   GitCompare,
+  Images,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -36,6 +37,8 @@ import { TransactionCostCalculator } from "@/components/TransactionCostCalculato
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
 import { safeDateDisplay } from "@/lib/safeDate";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
+import { PropertyLightbox } from "@/components/buyers/PropertyLightbox";
+import { InventoryDiscoveryDrawer } from "@/components/buyers/InventoryDiscoveryDrawer";
 
 interface Buyer {
   id: string;
@@ -432,6 +435,9 @@ const Buyer = () => {
 
   // State for image galleries - track selected image per property
   const [selectedImages, setSelectedImages] = useState<Record<string, number>>({});
+  
+  // State for lightbox
+  const [lightbox, setLightbox] = useState<{ images: string[]; index: number; title: string } | null>(null);
 
   const renderPropertyCard = (buyerProperty: BuyerProperty) => {
     const property = buyerProperty.properties;
@@ -482,10 +488,27 @@ const Buyer = () => {
             className="relative"
             onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
           >
-            <img src={currentImage} alt={property.address} className="w-full h-48 object-cover" />
+            <img src={currentImage} alt={property.address} className="w-full h-48 object-cover cursor-pointer" />
+            
+            {/* Gallery Icon - Top Left */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightbox({
+                  images: sortedImages.map((img) => img.url),
+                  index: selectedImageIndex,
+                  title: `${property.address}, ${property.city}`,
+                });
+              }}
+              className="absolute top-2 left-12 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center pointer-events-auto"
+              aria-label="פתח גלריה"
+            >
+              <Images className="w-4 h-4" />
+            </button>
+            
             {/* Image navigation dots */}
             {sortedImages.length > 1 && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
                 {sortedImages.map((_, idx) => (
                   <button
                     key={idx}
@@ -493,8 +516,8 @@ const Buyer = () => {
                       e.stopPropagation();
                       setSelectedImages((prev) => ({ ...prev, [buyerProperty.id]: idx }));
                     }}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      selectedImageIndex === idx ? "bg-primary w-4" : "bg-white/70 hover:bg-white"
+                    className={`w-2.5 h-2.5 rounded-full transition-all pointer-events-auto ${
+                      selectedImageIndex === idx ? "bg-primary w-5" : "bg-white/70 hover:bg-white"
                     }`}
                     aria-label={`תמונה ${idx + 1}`}
                   />
@@ -503,41 +526,43 @@ const Buyer = () => {
             )}
             {/* Image counter badge */}
             {sortedImages.length > 1 && (
-              <Badge className="absolute top-2 left-2 bg-black/60 text-white text-xs">
+              <Badge className="absolute top-2 left-2 bg-black/60 text-white text-xs z-10">
                 {selectedImageIndex + 1} / {sortedImages.length}
               </Badge>
             )}
-            {/* Navigation arrows for mobile */}
+            {/* Navigation arrows - improved touch targets */}
             {sortedImages.length > 1 && (
               <>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     setSelectedImages((prev) => ({
                       ...prev,
                       [buyerProperty.id]: selectedImageIndex > 0 ? selectedImageIndex - 1 : sortedImages.length - 1,
                     }));
                   }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition-colors"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors pointer-events-auto touch-manipulation"
                   aria-label="תמונה קודמת"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     setSelectedImages((prev) => ({
                       ...prev,
                       [buyerProperty.id]: selectedImageIndex < sortedImages.length - 1 ? selectedImageIndex + 1 : 0,
                     }));
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-1.5 transition-colors"
+                  className="absolute right-12 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors pointer-events-auto touch-manipulation"
                   aria-label="תמונה הבאה"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </>
@@ -764,29 +789,38 @@ const Buyer = () => {
 
       <main className="container mx-auto px-4 py-6">
         <div className="mb-6 space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <h2 className="text-xl font-semibold">הנכסים שלי</h2>
-            <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <MessageCircle className="w-4 h-4 ml-2" />
-                  שלח הודעה לסוכן
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>שלח הודעה לסוכן</DialogTitle>
-                </DialogHeader>
-                <Textarea
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="כתוב הודעה לסוכן..."
-                  rows={5}
-                  maxLength={300}
-                />
-                <Button onClick={sendMessage}>שלח</Button>
-              </DialogContent>
-            </Dialog>
+            <div className="flex flex-wrap gap-2">
+              {/* Inventory Discovery Drawer */}
+              <InventoryDiscoveryDrawer
+                buyerId={buyer.id}
+                buyerAgentId={buyerProperties[0]?.agent_id || null}
+                excludedPropertyIds={buyerProperties.map((bp) => bp.property_id)}
+              />
+              
+              <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="rounded-xl">
+                    <MessageCircle className="w-4 h-4 ml-2" />
+                    שלח הודעה לסוכן
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>שלח הודעה לסוכן</DialogTitle>
+                  </DialogHeader>
+                  <Textarea
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="כתוב הודעה לסוכן..."
+                    rows={5}
+                    maxLength={300}
+                  />
+                  <Button onClick={sendMessage}>שלח</Button>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           <AddPropertyDialog buyerId={buyer.id} onPropertyAdded={fetchBuyerData} />
@@ -887,6 +921,17 @@ const Buyer = () => {
               השוואת {selectedForCompare.size} נכסים
             </Button>
           </div>
+        )}
+        
+        {/* Property Lightbox */}
+        {lightbox && (
+          <PropertyLightbox
+            images={lightbox.images}
+            initialIndex={lightbox.index}
+            open={!!lightbox}
+            onOpenChange={(open) => !open && setLightbox(null)}
+            title={lightbox.title}
+          />
         )}
       </main>
     </div>
