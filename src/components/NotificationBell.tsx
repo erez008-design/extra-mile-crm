@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -11,6 +11,9 @@ import { formatDistanceToNow } from "date-fns";
 import { he } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { sanitizeIsraeliPhone } from "@/lib/phoneUtils";
+import { toast } from "sonner";
 
 export function NotificationBell() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -21,6 +24,48 @@ export function NotificationBell() {
       markAsRead.mutate(notification.id);
     }
     navigate(`/property/${notification.property_id}`);
+  };
+
+  const handleWhatsAppReply = async (e: React.MouseEvent, notification: typeof notifications[0]) => {
+    e.stopPropagation();
+    
+    try {
+      // Fetch buyer phone
+      const { data: buyer } = await supabase
+        .from("buyers")
+        .select("phone, full_name")
+        .eq("id", notification.buyer_id)
+        .single();
+
+      if (!buyer?.phone) {
+        toast.error("לא נמצא מספר טלפון לקונה");
+        return;
+      }
+
+      // Sanitize and format phone for WhatsApp
+      const sanitized = sanitizeIsraeliPhone(buyer.phone);
+      const whatsappPhone = sanitized.replace(/^0/, "972");
+
+      // Build message with buyer name and property address
+      const propertyInfo = notification.property 
+        ? `${notification.property.address}, ${notification.property.city}`
+        : "הנכס שביקשת";
+      
+      const message = encodeURIComponent(
+        `שלום ${buyer.full_name},\nקיבלתי את בקשתך לגבי ${propertyInfo}. אשמח לעזור! 🏠`
+      );
+
+      // Open WhatsApp
+      window.open(`https://wa.me/${whatsappPhone}?text=${message}`, "_blank");
+
+      // Mark as read
+      if (!notification.is_read_by_agent) {
+        markAsRead.mutate(notification.id);
+      }
+    } catch (error) {
+      console.error("Error opening WhatsApp:", error);
+      toast.error("שגיאה בפתיחת וואטסאפ");
+    }
   };
 
   return (
@@ -92,6 +137,17 @@ export function NotificationBell() {
                           {notification.match_reason}
                         </p>
                       )}
+                      
+                      {/* WhatsApp Reply Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 gap-1.5 h-7 text-xs rounded-lg bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+                        onClick={(e) => handleWhatsAppReply(e, notification)}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        השב בוואטסאפ
+                      </Button>
                     </div>
                   </div>
                 </div>
