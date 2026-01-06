@@ -30,6 +30,7 @@ import {
   Images,
   Camera,
   Lock,
+  Share2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -683,17 +684,24 @@ const Buyer = () => {
                 />
 
                 {/* Privacy Toggle */}
-                <div className="flex items-center space-x-3 space-x-reverse p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-start space-x-3 space-x-reverse p-3 bg-muted/30 rounded-lg">
                   <Switch
                     id={`share-insights-${buyerProperty.id}`}
                     checked={form?.share_insights_with_agent || false}
                     onCheckedChange={(checked) => 
                       updateInsightsForm(buyerProperty.id, "share_insights_with_agent", checked)
                     }
+                    className="mt-0.5"
                   />
-                  <Label htmlFor={`share-insights-${buyerProperty.id}`} className="text-sm cursor-pointer">
-                    שתף תובנות עם הסוכן
-                  </Label>
+                  <div className="flex-1">
+                    <Label htmlFor={`share-insights-${buyerProperty.id}`} className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                      <Share2 className="w-4 h-4" />
+                      שתף תובנות עם הסוכן
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      הסוכן יוכל לראות את התובנות האלו כדי להבין אותך טוב יותר ולהשתפר במציאת התאמות עבורך
+                    </p>
+                  </div>
                 </div>
 
                 {!form?.share_insights_with_agent && (
