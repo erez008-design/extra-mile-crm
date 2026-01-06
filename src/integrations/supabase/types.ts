@@ -138,6 +138,7 @@ export type Database = {
           note: string | null
           price_offered: number | null
           property_id: string | null
+          share_insights_with_agent: boolean
           status: string | null
           updated_at: string | null
           visited_at: string | null
@@ -153,6 +154,7 @@ export type Database = {
           note?: string | null
           price_offered?: number | null
           property_id?: string | null
+          share_insights_with_agent?: boolean
           status?: string | null
           updated_at?: string | null
           visited_at?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           note?: string | null
           price_offered?: number | null
           property_id?: string | null
+          share_insights_with_agent?: boolean
           status?: string | null
           updated_at?: string | null
           visited_at?: string | null
@@ -200,8 +203,10 @@ export type Database = {
           file_type: string
           file_url: string
           id: string
+          is_private: boolean
           mime_type: string | null
           property_id: string
+          shared_with_agent: boolean
           storage_path: string
         }
         Insert: {
@@ -214,8 +219,10 @@ export type Database = {
           file_type: string
           file_url: string
           id?: string
+          is_private?: boolean
           mime_type?: string | null
           property_id: string
+          shared_with_agent?: boolean
           storage_path: string
         }
         Update: {
@@ -228,8 +235,10 @@ export type Database = {
           file_type?: string
           file_url?: string
           id?: string
+          is_private?: boolean
           mime_type?: string | null
           property_id?: string
+          shared_with_agent?: boolean
           storage_path?: string
         }
         Relationships: [
