@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { LogOut, Building2, Plus, Upload, X, Users, Send, RefreshCw, FileText, Loader2, Trash2, Pencil, AlertTriangle, Zap } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -538,7 +539,8 @@ const Agent = () => {
                 <p className="text-sm text-muted-foreground">EXTRAMILE</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <NotificationBell />
               <Button 
                 variant="default" 
                 size="sm" 
