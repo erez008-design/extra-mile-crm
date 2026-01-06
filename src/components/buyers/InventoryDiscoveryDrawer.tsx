@@ -92,7 +92,8 @@ export function InventoryDiscoveryDrawer({
   const handleRequestInfo = async (property: InventoryProperty) => {
     setRequestingId(property.id);
     try {
-      const agentId = property.agent_id || buyerAgentId;
+      // Agent-first routing: buyer's agent takes priority
+      const agentId = buyerAgentId || property.agent_id;
 
       if (!agentId) {
         toast.error("לא נמצא סוכן לנכס זה");
@@ -104,7 +105,7 @@ export function InventoryDiscoveryDrawer({
         buyer_id: buyerId,
         agent_id: agentId,
         property_id: property.id,
-        match_score: 100, // Manual request = high priority
+        match_score: 100,
         match_reason: "בקשת מידע ישירה מהקונה",
         is_read_by_agent: false,
         is_read_by_manager: false,
@@ -116,12 +117,30 @@ export function InventoryDiscoveryDrawer({
       await supabase.from("activity_logs").insert({
         buyer_id: buyerId,
         agent_id: agentId,
-        action_type: "property_saved" as any, // Using property_saved as closest match
+        action_type: "property_saved" as any,
         description: `קונה ביקש מידע על נכס: ${property.address}, ${property.city}`,
         metadata: { 
           property_id: property.id,
           source: "inventory_discovery"
         }
+      });
+
+      // 3. Fetch buyer name for email
+      const { data: buyer } = await supabase
+        .from("buyers")
+        .select("full_name")
+        .eq("id", buyerId)
+        .single();
+
+      // 4. Send email notification to agent
+      await supabase.functions.invoke("notify-agent-email", {
+        body: {
+          agent_id: agentId,
+          buyer_name: buyer?.full_name || "לקוח",
+          property_address: property.address,
+          property_city: property.city,
+          property_id: property.id,
+        },
       });
 
       toast.success("בקשתך נשלחה לסוכן בהצלחה!");
