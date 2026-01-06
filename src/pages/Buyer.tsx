@@ -71,7 +71,7 @@ interface BuyerProperty {
 }
 
 // Map Hebrew display labels to English database values
-// DB constraint only allows: offered, interested, seen, not_interested, want_to_see, offered_price
+// DB constraint allows: offered, interested, seen, not_interested, want_to_see, offered_price, requested_info
 const STATUS_MAP: Record<string, string> = {
   הוצע: "offered",
   נראה: "seen",
@@ -79,6 +79,7 @@ const STATUS_MAP: Record<string, string> = {
   "לא מעוניין": "not_interested",
   "רוצה לראות": "want_to_see",
   "הצעתי מחיר": "offered_price",
+  "ביקשתי מידע": "requested_info",
   // Also map English values to themselves for existing data
   offered: "offered",
   seen: "seen",
@@ -86,6 +87,7 @@ const STATUS_MAP: Record<string, string> = {
   not_interested: "not_interested",
   want_to_see: "want_to_see",
   offered_price: "offered_price",
+  requested_info: "requested_info",
 };
 
 const Buyer = () => {
@@ -334,7 +336,7 @@ const Buyer = () => {
     console.log("===================================");
 
     // Valid database statuses - ONLY these are allowed by DB constraint
-    const validStatuses = ["offered", "seen", "interested", "not_interested", "want_to_see", "offered_price"];
+    const validStatuses = ["offered", "seen", "interested", "not_interested", "want_to_see", "offered_price", "requested_info"];
 
     // Try to map the status
     let dbStatus = STATUS_MAP[form.status];
@@ -416,6 +418,7 @@ const Buyer = () => {
       not_interested: { label: "לא מעוניין", variant: "destructive" },
       want_to_see: { label: "רוצה לראות", variant: "default" },
       offered_price: { label: "הצעתי מחיר", variant: "default" },
+      requested_info: { label: "ביקשתי מידע", variant: "secondary" },
     };
 
     const config = statusConfig[status] || statusConfig.offered;
@@ -425,6 +428,7 @@ const Buyer = () => {
   const groupByStatus = () => {
     return {
       offered: buyerProperties.filter((bp) => bp.status === "offered"),
+      requested_info: buyerProperties.filter((bp) => bp.status === "requested_info"),
       seen: buyerProperties.filter((bp) => bp.status === "seen"),
       interested: buyerProperties.filter((bp) => bp.status === "interested"),
       not_interested: buyerProperties.filter((bp) => bp.status === "not_interested"),
@@ -488,149 +492,131 @@ const Buyer = () => {
             className="relative"
             onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
           >
-            <img src={currentImage} alt={property.address} className="w-full h-48 object-cover cursor-pointer" />
-            
-            {/* Gallery Icon - Top Left */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightbox({
-                  images: sortedImages.map((img) => img.url),
-                  index: selectedImageIndex,
-                  title: `${property.address}, ${property.city}`,
-                });
-              }}
-              className="absolute top-2 left-12 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center pointer-events-auto"
-              aria-label="פתח גלריה"
-            >
-              <Images className="w-4 h-4" />
-            </button>
-            
-            {/* Image navigation dots */}
-            {sortedImages.length > 1 && (
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
-                {sortedImages.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedImages((prev) => ({ ...prev, [buyerProperty.id]: idx }));
-                    }}
-                    className={`w-2.5 h-2.5 rounded-full transition-all pointer-events-auto ${
-                      selectedImageIndex === idx ? "bg-primary w-5" : "bg-white/70 hover:bg-white"
-                    }`}
-                    aria-label={`תמונה ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-            {/* Image counter badge */}
-            {sortedImages.length > 1 && (
-              <Badge className="absolute top-2 left-2 bg-black/60 text-white text-xs z-10">
-                {selectedImageIndex + 1} / {sortedImages.length}
-              </Badge>
-            )}
-            {/* Navigation arrows - improved touch targets */}
+            <img
+              src={currentImage}
+              alt={property.address}
+              className="w-full h-48 object-cover cursor-pointer"
+            />
             {sortedImages.length > 1 && (
               <>
+                {/* Image dots */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {sortedImages.slice(0, 5).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedImages((prev) => ({ ...prev, [buyerProperty.id]: idx }));
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        selectedImageIndex === idx ? "bg-white scale-125" : "bg-white/50"
+                      }`}
+                    />
+                  ))}
+                  {sortedImages.length > 5 && (
+                    <span className="text-white text-xs ml-1">+{sortedImages.length - 5}</span>
+                  )}
+                </div>
+                {/* Gallery icon */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
-                    setSelectedImages((prev) => ({
-                      ...prev,
-                      [buyerProperty.id]: selectedImageIndex > 0 ? selectedImageIndex - 1 : sortedImages.length - 1,
-                    }));
+                    setLightbox({
+                      images: sortedImages.map((img) => img.url),
+                      index: selectedImageIndex,
+                      title: `${property.address}, ${property.city}`,
+                    });
                   }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors pointer-events-auto touch-manipulation"
-                  aria-label="תמונה קודמת"
+                  className="absolute top-3 left-3 bg-black/60 text-white p-2 rounded-lg hover:bg-black/80"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setSelectedImages((prev) => ({
-                      ...prev,
-                      [buyerProperty.id]: selectedImageIndex < sortedImages.length - 1 ? selectedImageIndex + 1 : 0,
-                    }));
-                  }}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors pointer-events-auto touch-manipulation"
-                  aria-label="תמונה הבאה"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <Images className="w-4 h-4" />
                 </button>
               </>
             )}
+            {/* Image count badge */}
+            <Badge className="absolute bottom-2 right-2 bg-black/60 text-white">
+              {sortedImages.length} תמונות
+            </Badge>
           </div>
         )}
-        <CardContent className="p-4">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <h3 className="font-semibold text-lg">{property.address}</h3>
-              <p className="text-sm text-muted-foreground">{property.city}</p>
-            </div>
+
+        <CardContent className="p-4 space-y-3">
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
+          >
+            <h3 className="font-semibold text-lg">{property.address}</h3>
+            <p className="text-muted-foreground text-sm">{property.city}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-sm">
+            {property.rooms && <Badge variant="outline">{property.rooms} חדרים</Badge>}
+            {property.size_sqm && <Badge variant="outline">{property.size_sqm} מ״ר</Badge>}
             {getStatusBadge(buyerProperty.status)}
           </div>
 
-          <div className="flex gap-4 text-sm text-muted-foreground mb-3">
-            {property.rooms && <span>{property.rooms} חדרים</span>}
-            {property.size_sqm && <span>{property.size_sqm} מ״ר</span>}
-            <span className="font-semibold text-foreground">₪{property.price.toLocaleString()}</span>
+          <p className="text-xl font-bold">
+            ₪{property.price?.toLocaleString() || "לא צוין"}
+          </p>
+
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              size="sm"
+              variant={buyerProperty.status === "interested" ? "default" : "outline"}
+              onClick={() => updatePropertyStatus(buyerProperty.id, "אהבתי")}
+            >
+              <Heart className="w-4 h-4 ml-1" />
+              אהבתי
+            </Button>
+            <Button
+              size="sm"
+              variant={buyerProperty.status === "seen" ? "default" : "outline"}
+              onClick={() => updatePropertyStatus(buyerProperty.id, "נראה")}
+            >
+              <Eye className="w-4 h-4 ml-1" />
+              ראיתי
+            </Button>
+            <Button
+              size="sm"
+              variant={buyerProperty.status === "not_interested" ? "destructive" : "outline"}
+              onClick={() => updatePropertyStatus(buyerProperty.id, "לא מעוניין")}
+            >
+              <EyeOff className="w-4 h-4 ml-1" />
+              לא מעוניין
+            </Button>
           </div>
 
-          {buyerProperty.visited_at && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-              <Calendar className="w-4 h-4" />
-              <span>
-                נראה בתאריך:{" "}
-                {safeDateDisplay(buyerProperty.visited_at, (d) => format(d, "d MMMM yyyy", { locale: he }))}
-              </span>
-            </div>
-          )}
-
-          {buyerProperty.note && (
-            <div className="bg-muted p-3 rounded-md mb-3">
-              <p className="text-sm">{buyerProperty.note}</p>
-            </div>
-          )}
-
-          {/* Documents section removed - no FK relationship in DB */}
-
-          {/* Property Insights Form */}
-          <Card
-            className={`border-2 mb-3 ${unsaved ? "border-orange-400 bg-orange-50/50 dark:bg-orange-950/20" : "border-primary/20"}`}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  תובנות על הנכס
+          {/* Collapsible Insights Form */}
+          <div className="border-t pt-3 mt-3">
+            {!isEditing ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground"
+                onClick={() => initFormIfNeeded(buyerProperty)}
+              >
+                <FileText className="w-4 h-4 ml-2" />
+                הוסף תובנות על הנכס
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <Label className="text-sm font-medium">התרשמות שלי</Label>
                   {unsaved && (
-                    <Badge variant="outline" className="text-orange-600 border-orange-400 text-xs">
+                    <Badge variant="outline" className="text-orange-500 border-orange-500">
                       <AlertCircle className="w-3 h-3 ml-1" />
                       שינויים לא נשמרו
                     </Badge>
                   )}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor={`status-${buyerProperty.id}`}>סטטוס</Label>
+                </div>
+
                 <Select
-                  value={isEditing ? form.status : buyerProperty.status}
-                  onValueChange={(value) => {
-                    initFormIfNeeded(buyerProperty);
-                    updateInsightsForm(buyerProperty.id, "status", value);
-                  }}
+                  value={form?.status || buyerProperty.status || "offered"}
+                  onValueChange={(value) => updateInsightsForm(buyerProperty.id, "status", value)}
                 >
-                  <SelectTrigger id={`status-${buyerProperty.id}`}>
-                    <SelectValue placeholder="בחר סטטוס" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="offered">הוצע</SelectItem>
@@ -639,113 +625,78 @@ const Buyer = () => {
                     <SelectItem value="not_interested">לא מעוניין</SelectItem>
                     <SelectItem value="want_to_see">רוצה לראות</SelectItem>
                     <SelectItem value="offered_price">הצעתי מחיר</SelectItem>
+                    <SelectItem value="requested_info">ביקשתי מידע</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`not-interested-${buyerProperty.id}`}>למה לא מעוניין?</Label>
+                {form?.status === "not_interested" && (
+                  <Textarea
+                    placeholder="למה לא מעוניין?"
+                    value={form?.not_interested_reason || ""}
+                    onChange={(e) => updateInsightsForm(buyerProperty.id, "not_interested_reason", e.target.value)}
+                    rows={2}
+                  />
+                )}
+
                 <Textarea
-                  id={`not-interested-${buyerProperty.id}`}
-                  value={isEditing ? form.not_interested_reason : buyerProperty.not_interested_reason || ""}
-                  onChange={(e) => {
-                    initFormIfNeeded(buyerProperty);
-                    updateInsightsForm(buyerProperty.id, "not_interested_reason", e.target.value);
-                  }}
-                  placeholder="למשל: רחוק מהעבודה, קומה גבוהה מדי..."
+                  placeholder="מה אהבתי בנכס?"
+                  value={form?.liked_text || ""}
+                  onChange={(e) => updateInsightsForm(buyerProperty.id, "liked_text", e.target.value)}
                   rows={2}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`liked-${buyerProperty.id}`}>מה אהבת?</Label>
                 <Textarea
-                  id={`liked-${buyerProperty.id}`}
-                  value={isEditing ? form.liked_text : buyerProperty.liked_text || ""}
-                  onChange={(e) => {
-                    initFormIfNeeded(buyerProperty);
-                    updateInsightsForm(buyerProperty.id, "liked_text", e.target.value);
-                  }}
-                  placeholder="למשל: מיקום מצוין, מרפסת גדולה..."
+                  placeholder="מה לא אהבתי?"
+                  value={form?.disliked_text || ""}
+                  onChange={(e) => updateInsightsForm(buyerProperty.id, "disliked_text", e.target.value)}
                   rows={2}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`disliked-${buyerProperty.id}`}>מה פחות אהבת?</Label>
-                <Textarea
-                  id={`disliked-${buyerProperty.id}`}
-                  value={isEditing ? form.disliked_text : buyerProperty.disliked_text || ""}
-                  onChange={(e) => {
-                    initFormIfNeeded(buyerProperty);
-                    updateInsightsForm(buyerProperty.id, "disliked_text", e.target.value);
-                  }}
-                  placeholder="למשל: חניה רחוקה, צריך שיפוצים..."
-                  rows={2}
-                />
-              </div>
-
-              {isEditing && (
                 <div className="flex gap-2">
-                  <Button onClick={() => saveInsights(buyerProperty.id)} className="flex-1" size="sm">
-                    <Save className="w-4 h-4 ml-2" />
-                    שמור תובנות
+                  <Button size="sm" onClick={() => saveInsights(buyerProperty.id)} disabled={!unsaved}>
+                    <Save className="w-4 h-4 ml-1" />
+                    שמור
                   </Button>
-                  <Button onClick={() => cancelInsights(buyerProperty.id)} variant="outline" size="sm">
-                    <X className="w-4 h-4 ml-2" />
-                    ביטול
+                  <Button size="sm" variant="ghost" onClick={() => cancelInsights(buyerProperty.id)}>
+                    <X className="w-4 h-4 ml-1" />
+                    בטל
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => updatePropertyStatus(buyerProperty.id, "seen")}>
-              <Eye className="w-4 h-4 ml-2" />
-              נראה
-            </Button>
-            <Button size="sm" variant="default" onClick={() => updatePropertyStatus(buyerProperty.id, "interested")}>
-              <Heart className="w-4 h-4 ml-2" />
-              אהבתי
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => updatePropertyStatus(buyerProperty.id, "not_interested")}>
-              <EyeOff className="w-4 h-4 ml-2" />
-              לא מעוניין
-            </Button>
+          {/* Note & Message */}
+          {buyerProperty.note && (
+            <div className="bg-muted/50 p-2 rounded text-sm">
+              <span className="font-medium">הערה: </span>
+              {buyerProperty.note}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-2">
             <Button
               size="sm"
-              variant={isSelectedForCompare ? "default" : "outline"}
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleCompareSelection();
-              }}
-              title="השוואה"
-            >
-              <GitCompare className="w-4 h-4 ml-2" />
-              השוואה
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={() => {
                 setSelectedProperty(buyerProperty);
                 setNoteText(buyerProperty.note || "");
                 setShowNoteDialog(true);
               }}
             >
+              <FileText className="w-4 h-4 ml-1" />
               הערה
             </Button>
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={() => {
                 setSelectedProperty(buyerProperty);
                 setShowMessageDialog(true);
               }}
             >
-              <MessageCircle className="w-4 h-4 ml-2" />
-              שלח הודעה לסוכן
+              <MessageCircle className="w-4 h-4 ml-1" />
+              הודעה
             </Button>
           </div>
         </CardContent>
@@ -756,7 +707,7 @@ const Buyer = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>טוען...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
@@ -765,16 +716,20 @@ const Buyer = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-6">
-          <p className="text-center text-muted-foreground">לא נמצא קונה עם מזהה זה</p>
+          <p className="text-center text-muted-foreground">הקונה לא נמצא</p>
         </Card>
       </div>
     );
   }
 
   const grouped = groupByStatus();
+  
+  // Properties to exclude from discovery drawer - all properties buyer already has any status for
+  const excludedPropertyIds = buyerProperties.map((bp) => bp.property_id);
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
+      {/* Header */}
       <header className="border-b bg-card shadow-soft sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
@@ -796,7 +751,8 @@ const Buyer = () => {
               <InventoryDiscoveryDrawer
                 buyerId={buyer.id}
                 buyerAgentId={buyerProperties[0]?.agent_id || null}
-                excludedPropertyIds={buyerProperties.map((bp) => bp.property_id)}
+                excludedPropertyIds={excludedPropertyIds}
+                onRequestComplete={fetchBuyerData}
               />
               
               <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
@@ -829,12 +785,15 @@ const Buyer = () => {
         <Tabs defaultValue="all" className="w-full">
           {/* Horizontally scrollable tabs for mobile */}
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-6 gap-1 h-auto flex-nowrap">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-7 gap-1 h-auto flex-nowrap">
               <TabsTrigger value="all" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 הכל ({buyerProperties.length})
               </TabsTrigger>
               <TabsTrigger value="offered" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 הוצעו ({grouped.offered.length})
+              </TabsTrigger>
+              <TabsTrigger value="requested_info" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
+                ביקשתי מידע ({grouped.requested_info.length})
               </TabsTrigger>
               <TabsTrigger value="seen" className="flex-shrink-0 px-3 py-2 text-xs sm:text-sm whitespace-nowrap">
                 נראה ({grouped.seen.length})
@@ -866,6 +825,16 @@ const Buyer = () => {
 
           <TabsContent value="offered" className="space-y-4 mt-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{grouped.offered.map(renderPropertyCard)}</div>
+          </TabsContent>
+
+          <TabsContent value="requested_info" className="space-y-4 mt-4">
+            {grouped.requested_info.length === 0 ? (
+              <Card className="p-6">
+                <p className="text-center text-muted-foreground">לא ביקשת מידע על נכסים עדיין. לחץ על "גלה עוד נכסים" למעלה.</p>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{grouped.requested_info.map(renderPropertyCard)}</div>
+            )}
           </TabsContent>
 
           <TabsContent value="seen" className="space-y-4 mt-4">

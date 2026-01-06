@@ -34,12 +34,14 @@ interface InventoryDiscoveryDrawerProps {
   buyerId: string;
   buyerAgentId: string | null;
   excludedPropertyIds?: string[];
+  onRequestComplete?: () => void;
 }
 
 export function InventoryDiscoveryDrawer({
   buyerId,
   buyerAgentId,
   excludedPropertyIds = [],
+  onRequestComplete,
 }: InventoryDiscoveryDrawerProps) {
   const [open, setOpen] = useState(false);
   const [properties, setProperties] = useState<InventoryProperty[]>([]);
@@ -87,7 +89,7 @@ export function InventoryDiscoveryDrawer({
     if (open) {
       fetchInventory();
     }
-  }, [open]);
+  }, [open, excludedPropertyIds.length]);
 
   const handleRequestInfo = async (property: InventoryProperty) => {
     setRequestingId(property.id);
@@ -100,7 +102,26 @@ export function InventoryDiscoveryDrawer({
         return;
       }
 
-      // 1. Insert notification
+      // 1. Upsert into buyer_properties with status 'requested_info'
+      const { error: bpError } = await supabase
+        .from("buyer_properties")
+        .upsert({
+          buyer_id: buyerId,
+          property_id: property.id,
+          agent_id: agentId,
+          status: "requested_info",
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'buyer_id,property_id',
+          ignoreDuplicates: false
+        });
+
+      if (bpError) {
+        console.error("Error upserting buyer_property:", bpError);
+        throw bpError;
+      }
+
+      // 2. Insert notification
       const { error: notifError } = await supabase.from("notifications").insert({
         buyer_id: buyerId,
         agent_id: agentId,
@@ -111,9 +132,12 @@ export function InventoryDiscoveryDrawer({
         is_read_by_manager: false,
       });
 
-      if (notifError) throw notifError;
+      if (notifError) {
+        console.error("Notification insert error:", notifError);
+        // Don't throw - continue with the flow
+      }
 
-      // 2. Log activity
+      // 3. Log activity
       await supabase.from("activity_logs").insert({
         buyer_id: buyerId,
         agent_id: agentId,
@@ -125,15 +149,15 @@ export function InventoryDiscoveryDrawer({
         }
       });
 
-      // 3. Fetch buyer name for email
+      // 4. Fetch buyer name for email
       const { data: buyer } = await supabase
         .from("buyers")
         .select("full_name")
         .eq("id", buyerId)
         .single();
 
-      // 4. Send email notification to agent
-      await supabase.functions.invoke("notify-agent-email", {
+      // 5. Send email notification to agent (non-blocking)
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke("notify-agent-email", {
         body: {
           agent_id: agentId,
           buyer_name: buyer?.full_name || "לקוח",
@@ -143,7 +167,20 @@ export function InventoryDiscoveryDrawer({
         },
       });
 
+      if (emailError) {
+        console.warn("Email notification failed (non-blocking):", emailError);
+      } else {
+        console.log("Email notification sent:", emailResult);
+      }
+
       toast.success("בקשתך נשלחה לסוכן בהצלחה!");
+      
+      // Remove property from local list immediately for better UX
+      setProperties(prev => prev.filter(p => p.id !== property.id));
+      
+      // Trigger parent refresh
+      onRequestComplete?.();
+
     } catch (error) {
       console.error("Error requesting info:", error);
       toast.error("שגיאה בשליחת הבקשה");
