@@ -36,6 +36,8 @@ serve(async (req: Request): Promise<Response> => {
 
     const { agent_id, buyer_name, property_address, property_city, property_id }: NotifyAgentRequest = await req.json();
 
+    console.log("Received request:", { agent_id, buyer_name, property_address, property_city, property_id });
+
     if (!agent_id || !buyer_name || !property_address) {
       console.error("Missing required fields:", { agent_id, buyer_name, property_address });
       return new Response(
@@ -51,10 +53,22 @@ serve(async (req: Request): Promise<Response> => {
       .eq("id", agent_id)
       .single();
 
+    console.log("Profile lookup result:", { profile, profileError, agent_id });
+
     if (profileError || !profile?.email) {
-      console.error("Failed to fetch agent profile:", profileError);
+      console.error("Agent profile issue:", { 
+        profileError, 
+        hasEmail: !!profile?.email, 
+        agentId: agent_id,
+        profile_found: !!profile
+      });
       return new Response(
-        JSON.stringify({ error: "Agent profile not found or no email configured" }),
+        JSON.stringify({ 
+          error: "Agent profile not found or no email configured",
+          agent_id,
+          profile_found: !!profile,
+          has_email: !!profile?.email
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -66,6 +80,7 @@ serve(async (req: Request): Promise<Response> => {
     console.log(`Sending email to agent ${agentName} (${agentEmail}) about buyer ${buyer_name} for property ${propertyLocation}`);
 
     // Send email via Resend using fetch
+    // IMPORTANT: Using onboarding@resend.dev as the from address (verified by default)
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {

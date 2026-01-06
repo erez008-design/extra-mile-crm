@@ -50,12 +50,14 @@ const STATUS_MAP: Record<string, string> = {
   "לא מעוניין": "not_interested",
   "רוצה לראות": "want_to_see",
   "הצעתי מחיר": "offered_price",
+  "ביקשתי מידע": "requested_info",
   "offered": "offered",
   "seen": "seen",
   "interested": "interested",
   "not_interested": "not_interested",
   "want_to_see": "want_to_see",
   "offered_price": "offered_price",
+  "requested_info": "requested_info",
 };
 
 const BuyerPropertyDetails = () => {
@@ -209,6 +211,7 @@ const BuyerPropertyDetails = () => {
       not_interested: { label: "לא מעוניין", variant: "destructive" },
       want_to_see: { label: "רוצה לראות", variant: "default" },
       offered_price: { label: "הצעתי מחיר", variant: "default" },
+      requested_info: { label: "ביקשתי מידע", variant: "secondary" },
     };
     const config = statusConfig[status] || statusConfig.offered;
     return <Badge variant={config.variant}>{config.label}</Badge>;
