@@ -15,6 +15,8 @@ export interface BuyerUpload {
   caption: string | null;
   storage_path: string;
   created_at: string;
+  is_private: boolean;
+  shared_with_agent: boolean;
 }
 
 // 100MB max file size
@@ -90,10 +92,12 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
       file,
       caption,
       buyerPropertyId,
+      sharedWithAgent = false,
     }: {
       file: File;
       caption?: string;
       buyerPropertyId?: string;
+      sharedWithAgent?: boolean;
     }) => {
       if (!buyerId || !propertyId) {
         throw new Error("Missing buyer or property ID");
@@ -141,7 +145,7 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
 
       console.log("[BuyerUploads] Inserting record into buyer_uploads table...");
 
-      // Insert record
+      // Insert record with privacy fields
       const { data, error: insertError } = await supabase
         .from("buyer_uploads")
         .insert({
@@ -155,6 +159,8 @@ export function useBuyerUploads(buyerId: string | undefined, propertyId: string 
           mime_type: file.type,
           caption: caption || null,
           storage_path: storagePath,
+          is_private: true,
+          shared_with_agent: sharedWithAgent,
         })
         .select()
         .single();

@@ -452,6 +452,11 @@ function OfferedPropertyCard({ offered, buyerId }: { offered: OfferedProperty; b
   const property = offered.property;
   const primaryImage = property.images?.find((img: any) => img.is_primary) || property.images?.[0];
 
+  // Check if buyer shared insights with agent
+  const hasSharedInsights = (offered as any).share_insights_with_agent === true;
+  const buyerLiked = hasSharedInsights ? (offered as any).liked_text : null;
+  const buyerDisliked = hasSharedInsights ? (offered as any).disliked_text : null;
+
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "offered":
@@ -462,6 +467,8 @@ function OfferedPropertyCard({ offered, buyerId }: { offered: OfferedProperty; b
         return <Badge variant="destructive">לא מעוניין</Badge>;
       case "visited":
         return <Badge className="bg-blue-500 text-white">ביקר</Badge>;
+      case "requested_info":
+        return <Badge variant="secondary">ביקש מידע</Badge>;
       default:
         return <Badge variant="outline">{status || "הוצע"}</Badge>;
     }
@@ -507,6 +514,24 @@ function OfferedPropertyCard({ offered, buyerId }: { offered: OfferedProperty; b
           </div>
         </div>
       </div>
+      
+      {/* Buyer's Shared Insights - Only shown if buyer chose to share */}
+      {hasSharedInsights && (buyerLiked || buyerDisliked) && (
+        <div className="px-4 py-2 bg-primary/5 border-t border-primary/10">
+          <p className="text-xs font-medium text-primary mb-1">תובנות שהלקוח שיתף:</p>
+          {buyerLiked && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">אהב: </span>{buyerLiked}
+            </p>
+          )}
+          {buyerDisliked && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">לא אהב: </span>{buyerDisliked}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="border-t border-border px-4 py-3 bg-muted/30">
         {showFeedbackInput ? (
           <div className="space-y-2">

@@ -28,6 +28,8 @@ import {
   AlertCircle,
   GitCompare,
   Images,
+  Camera,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -39,6 +41,8 @@ import { safeDateDisplay } from "@/lib/safeDate";
 import extraMileLogo from "@/assets/extramile-logo.jpg";
 import { PropertyLightbox } from "@/components/buyers/PropertyLightbox";
 import { InventoryDiscoveryDrawer } from "@/components/buyers/InventoryDiscoveryDrawer";
+import { QuickUploadModal } from "@/components/buyers/QuickUploadModal";
+import { Switch } from "@/components/ui/switch";
 
 interface Buyer {
   id: string;
@@ -108,8 +112,12 @@ const Buyer = () => {
     not_interested_reason: string;
     liked_text: string;
     disliked_text: string;
+    share_insights_with_agent: boolean;
   }
   const [insightsForms, setInsightsForms] = useState<Record<string, InsightsFormData>>({});
+  
+  // State for quick upload modal
+  const [quickUploadProperty, setQuickUploadProperty] = useState<BuyerProperty | null>(null);
 
   // Log link view when buyer opens the page
   const logLinkView = async () => {
@@ -271,10 +279,11 @@ const Buyer = () => {
       not_interested_reason: buyerProperty.not_interested_reason || "",
       liked_text: buyerProperty.liked_text || "",
       disliked_text: buyerProperty.disliked_text || "",
+      share_insights_with_agent: false,
     };
   };
 
-  const updateInsightsForm = (propertyId: string, field: keyof InsightsFormData, value: string) => {
+  const updateInsightsForm = (propertyId: string, field: keyof InsightsFormData, value: string | boolean) => {
     setInsightsForms((prev) => ({
       ...prev,
       [propertyId]: {
@@ -302,7 +311,8 @@ const Buyer = () => {
       form.status !== (buyerProperty.status || "offered") ||
       form.not_interested_reason !== (buyerProperty.not_interested_reason || "") ||
       form.liked_text !== (buyerProperty.liked_text || "") ||
-      form.disliked_text !== (buyerProperty.disliked_text || "")
+      form.disliked_text !== (buyerProperty.disliked_text || "") ||
+      form.share_insights_with_agent !== false
     );
   };
 
@@ -315,6 +325,7 @@ const Buyer = () => {
           not_interested_reason: buyerProperty.not_interested_reason || "",
           liked_text: buyerProperty.liked_text || "",
           disliked_text: buyerProperty.disliked_text || "",
+          share_insights_with_agent: false,
         },
       }));
     }
@@ -370,6 +381,14 @@ const Buyer = () => {
       p_disliked_text: form.disliked_text || null,
       p_not_interested_reason: form.not_interested_reason || null,
     });
+    
+    // Also update share_insights_with_agent directly (RPC doesn't have this param yet)
+    if (!error) {
+      await supabase
+        .from("buyer_properties")
+        .update({ share_insights_with_agent: form.share_insights_with_agent })
+        .eq("id", buyerPropertyId);
+    }
 
     console.log("Update result - data:", data, "error:", error);
 
@@ -563,6 +582,17 @@ const Buyer = () => {
           <div className="flex flex-wrap gap-2 pt-2">
             <Button
               size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setQuickUploadProperty(buyerProperty);
+              }}
+            >
+              <Camera className="w-4 h-4 ml-1" />
+              העלה מדיה
+            </Button>
+            <Button
+              size="sm"
               variant={buyerProperty.status === "interested" ? "default" : "outline"}
               onClick={() => updatePropertyStatus(buyerProperty.id, "אהבתי")}
             >
@@ -651,6 +681,27 @@ const Buyer = () => {
                   onChange={(e) => updateInsightsForm(buyerProperty.id, "disliked_text", e.target.value)}
                   rows={2}
                 />
+
+                {/* Privacy Toggle */}
+                <div className="flex items-center space-x-3 space-x-reverse p-3 bg-muted/30 rounded-lg">
+                  <Switch
+                    id={`share-insights-${buyerProperty.id}`}
+                    checked={form?.share_insights_with_agent || false}
+                    onCheckedChange={(checked) => 
+                      updateInsightsForm(buyerProperty.id, "share_insights_with_agent", checked)
+                    }
+                  />
+                  <Label htmlFor={`share-insights-${buyerProperty.id}`} className="text-sm cursor-pointer">
+                    שתף תובנות עם הסוכן
+                  </Label>
+                </div>
+
+                {!form?.share_insights_with_agent && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Lock className="w-3 h-3" />
+                    התובנות שלך פרטיות ונראות רק לך
+                  </p>
+                )}
 
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => saveInsights(buyerProperty.id)} disabled={!unsaved}>
@@ -902,6 +953,20 @@ const Buyer = () => {
             title={lightbox.title}
           />
         )}
+
+        {/* Quick Upload Modal */}
+        <QuickUploadModal
+          buyerId={buyer.id}
+          propertyId={quickUploadProperty?.property_id || ""}
+          buyerPropertyId={quickUploadProperty?.id}
+          propertyAddress={quickUploadProperty?.properties?.address}
+          open={!!quickUploadProperty}
+          onOpenChange={(open) => !open && setQuickUploadProperty(null)}
+          onUploadComplete={() => {
+            setQuickUploadProperty(null);
+            toast.success("הקובץ הועלה בהצלחה");
+          }}
+        />
       </main>
     </div>
   );
