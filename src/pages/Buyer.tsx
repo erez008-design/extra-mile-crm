@@ -31,6 +31,8 @@ import {
   Camera,
   Lock,
   Share2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -44,6 +46,7 @@ import { PropertyLightbox } from "@/components/buyers/PropertyLightbox";
 import { InventoryDiscoveryDrawer } from "@/components/buyers/InventoryDiscoveryDrawer";
 import { QuickUploadModal } from "@/components/buyers/QuickUploadModal";
 import { Switch } from "@/components/ui/switch";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
 interface Buyer {
   id: string;
@@ -457,9 +460,6 @@ const Buyer = () => {
     };
   };
 
-  // State for image galleries - track selected image per property
-  const [selectedImages, setSelectedImages] = useState<Record<string, number>>({});
-  
   // State for lightbox
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number; title: string } | null>(null);
 
@@ -467,8 +467,6 @@ const Buyer = () => {
     const property = buyerProperty.properties;
     const images = property.property_images || [];
     const sortedImages = [...images].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
-    const selectedImageIndex = selectedImages[buyerProperty.id] || 0;
-    const currentImage = sortedImages[selectedImageIndex]?.url;
     // Documents functionality removed - no FK relationship in DB
     const form = insightsForms[buyerProperty.id];
     const isEditing = !!form;
@@ -506,55 +504,63 @@ const Buyer = () => {
         >
           <GitCompare className="w-5 h-5" />
         </div>
-        {/* Image Gallery */}
+        {/* Image Carousel */}
         {sortedImages.length > 0 && (
-          <div
-            className="relative"
-            onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
-          >
-            <img
-              src={currentImage}
-              alt={property.address}
-              className="w-full h-48 object-cover cursor-pointer"
-            />
-            {sortedImages.length > 1 && (
-              <>
-                {/* Image dots */}
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {sortedImages.slice(0, 5).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedImages((prev) => ({ ...prev, [buyerProperty.id]: idx }));
-                      }}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        selectedImageIndex === idx ? "bg-white scale-125" : "bg-white/50"
-                      }`}
+          <div className="relative">
+            <Carousel
+              opts={{ 
+                direction: "rtl",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {sortedImages.map((img, idx) => (
+                  <CarouselItem key={idx}>
+                    <img
+                      src={img.url}
+                      alt={`${property.address} - ${idx + 1}`}
+                      className="w-full h-48 object-cover cursor-pointer"
+                      onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
                     />
-                  ))}
-                  {sortedImages.length > 5 && (
-                    <span className="text-white text-xs ml-1">+{sortedImages.length - 5}</span>
-                  )}
-                </div>
-                {/* Gallery icon */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightbox({
-                      images: sortedImages.map((img) => img.url),
-                      index: selectedImageIndex,
-                      title: `${property.address}, ${property.city}`,
-                    });
-                  }}
-                  className="absolute top-3 left-3 bg-black/60 text-white p-2 rounded-lg hover:bg-black/80"
-                >
-                  <Images className="w-4 h-4" />
-                </button>
-              </>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              
+              {/* Navigation arrows - inside the carousel */}
+              {sortedImages.length > 1 && (
+                <>
+                  <CarouselPrevious 
+                    className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/60 text-white border-none hover:bg-black/80"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <CarouselNext 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/60 text-white border-none hover:bg-black/80"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </>
+              )}
+            </Carousel>
+            
+            {/* Gallery icon - top left */}
+            {sortedImages.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox({
+                    images: sortedImages.map((img) => img.url),
+                    index: 0,
+                    title: `${property.address}, ${property.city}`,
+                  });
+                }}
+                className="absolute top-3 left-3 z-10 bg-black/60 text-white p-2 rounded-lg hover:bg-black/80"
+              >
+                <Images className="w-4 h-4" />
+              </button>
             )}
+            
             {/* Image count badge */}
-            <Badge className="absolute bottom-2 right-2 bg-black/60 text-white">
+            <Badge className="absolute bottom-2 right-2 z-10 bg-black/60 text-white">
               {sortedImages.length} תמונות
             </Badge>
           </div>
@@ -806,6 +812,27 @@ const Buyer = () => {
           <div className="flex flex-wrap justify-between items-center gap-3">
             <h2 className="text-xl font-semibold">הנכסים שלי</h2>
             <div className="flex flex-wrap gap-2">
+              {/* Persistent Compare Button */}
+              <Button
+                variant="outline"
+                className="rounded-xl relative"
+                onClick={() => {
+                  if (selectedForCompare.size >= 2) {
+                    navigate(`/compare?buyerId=${buyerId}&properties=${Array.from(selectedForCompare).join(",")}`);
+                  } else {
+                    toast.info("בחר לפחות 2 נכסים להשוואה בעזרת לחיצה על האייקון בפינת התמונה");
+                  }
+                }}
+              >
+                <GitCompare className="w-4 h-4 ml-2" />
+                השוואת נכסים
+                {selectedForCompare.size > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {selectedForCompare.size}
+                  </Badge>
+                )}
+              </Button>
+              
               {/* Inventory Discovery Drawer */}
               <InventoryDiscoveryDrawer
                 buyerId={buyer.id}
