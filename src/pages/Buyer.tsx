@@ -31,8 +31,6 @@ import {
   Camera,
   Lock,
   Share2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -46,7 +44,7 @@ import { PropertyLightbox } from "@/components/buyers/PropertyLightbox";
 import { InventoryDiscoveryDrawer } from "@/components/buyers/InventoryDiscoveryDrawer";
 import { QuickUploadModal } from "@/components/buyers/QuickUploadModal";
 import { Switch } from "@/components/ui/switch";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { PropertyImageSlider } from "@/components/buyers/PropertyImageSlider";
 
 interface Buyer {
   id: string;
@@ -504,66 +502,18 @@ const Buyer = () => {
         >
           <GitCompare className="w-5 h-5" />
         </div>
-        {/* Image Carousel */}
+        {/* Image Slider */}
         {sortedImages.length > 0 && (
-          <div className="relative">
-            <Carousel
-              opts={{ 
-                direction: "rtl",
-                loop: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {sortedImages.map((img, idx) => (
-                  <CarouselItem key={idx}>
-                    <img
-                      src={img.url}
-                      alt={`${property.address} - ${idx + 1}`}
-                      className="w-full h-48 object-cover cursor-pointer"
-                      onClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              
-              {/* Navigation arrows - inside the carousel */}
-              {sortedImages.length > 1 && (
-                <>
-                  <CarouselPrevious 
-                    className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/60 text-white border-none hover:bg-black/80"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <CarouselNext 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/60 text-white border-none hover:bg-black/80"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </>
-              )}
-            </Carousel>
-            
-            {/* Gallery icon - top left */}
-            {sortedImages.length > 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightbox({
-                    images: sortedImages.map((img) => img.url),
-                    index: 0,
-                    title: `${property.address}, ${property.city}`,
-                  });
-                }}
-                className="absolute top-3 left-3 z-10 bg-black/60 text-white p-2 rounded-lg hover:bg-black/80"
-              >
-                <Images className="w-4 h-4" />
-              </button>
-            )}
-            
-            {/* Image count badge */}
-            <Badge className="absolute bottom-2 right-2 z-10 bg-black/60 text-white">
-              {sortedImages.length} תמונות
-            </Badge>
-          </div>
+          <PropertyImageSlider
+            images={sortedImages}
+            propertyAddress={property.address}
+            onImageClick={() => navigate(`/buyer/${buyerId}/property/${buyerProperty.property_id}?bpId=${buyerProperty.id}`)}
+            onGalleryClick={() => setLightbox({
+              images: sortedImages.map((img) => img.url),
+              index: 0,
+              title: `${property.address}, ${property.city}`,
+            })}
+          />
         )}
 
         <CardContent className="p-4 space-y-3">
