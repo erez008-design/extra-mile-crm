@@ -47,6 +47,7 @@ interface Property {
   plot_size_sqm: number | null;
   levels_count: number | null;
   garden_size_sqm: number | null;
+  description: string | null;
   property_images: Array<{ url: string; is_primary: boolean }>;
 }
 
@@ -271,6 +272,7 @@ const CompareProperties = () => {
       case "toilets": return ext?.toilets;
       case "building_year": return prop.build_year;
       case "air_directions": return prop.air_directions || ext?.air_directions;
+      case "description": return prop.description;
       default: return null;
     }
   };
@@ -393,6 +395,10 @@ const CompareProperties = () => {
         const dirs = getAirDirectionsDisplay(prop.air_directions || ext?.air_directions || null);
         return dirs ? <span className="text-xs">{dirs}</span> : null;
       }
+      case "description":
+        return prop.description ? (
+          <p className="text-xs leading-relaxed line-clamp-4">{prop.description}</p>
+        ) : null;
       default:
         return null;
     }
@@ -428,7 +434,9 @@ const CompareProperties = () => {
     { key: "bathrooms", label: "חדרי רחצה", icon: Bath, category: "technical" },
     { key: "toilets", label: "שירותים", icon: Bath, category: "technical" },
     { key: "building_year", label: "שנת בנייה", icon: Calendar, category: "technical" },
-    { key: "air_directions", label: "כיווני אוויר", icon: Wind, category: "technical" },
+    // Location & Description category
+    { key: "air_directions", label: "כיווני אוויר", icon: Wind, category: "location" },
+    { key: "description", label: "תיאור הנכס", icon: FileText, category: "location" },
   ];
 
   // Filter fields that have data
@@ -584,6 +592,45 @@ const CompareProperties = () => {
               ))}
           </CardContent>
         </Card>
+
+        {/* Location & Description Card */}
+        {fieldsWithData.some(f => f.category === "location") && (
+          <Card className="shadow-soft overflow-hidden">
+            <CardHeader className="py-3 px-4 bg-primary/5 border-b">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <Wind className="w-4 h-4 text-primary" />
+                מיקום ותיאור
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {fieldsWithData
+                .filter(f => f.category === "location")
+                .map((field, idx) => (
+                  <div 
+                    key={field.key} 
+                    className={`flex items-start gap-3 px-4 py-3 ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
+                  >
+                    {/* Label Column - Fixed width */}
+                    <div className="w-24 flex-shrink-0 flex items-center gap-2 pt-0.5">
+                      <field.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground font-medium">{field.label}</span>
+                    </div>
+                    {/* Values */}
+                    <div className="flex-1 flex gap-4">
+                      {comparisonData.map((item) => (
+                        <div 
+                          key={item.buyerProperty.id} 
+                          className="flex-1 min-w-0"
+                        >
+                          {renderValue(item, field.key) || <span className="text-muted-foreground/50 text-xs">—</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Client Notes Card */}
         <Card className="shadow-soft overflow-hidden">
