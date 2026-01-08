@@ -477,31 +477,23 @@ const Buyer = () => {
         const newSet = new Set(prev);
         if (newSet.has(buyerProperty.property_id)) {
           newSet.delete(buyerProperty.property_id);
+          return newSet;
         } else if (newSet.size < 3) {
           newSet.add(buyerProperty.property_id);
+          toast.success("הנכס נוסף להשוואה. בחר נכס נוסף לצפייה בטבלה");
+          return newSet;
         } else {
           toast.error("ניתן להשוות עד 3 נכסים");
+          return prev;
         }
-        return newSet;
       });
     };
 
     return (
       <Card
         key={buyerProperty.id}
-        className={`overflow-hidden relative ${isSelectedForCompare ? "ring-2 ring-primary" : ""}`}
+        className={`overflow-hidden relative transition-all ${isSelectedForCompare ? "ring-2 ring-primary shadow-lg" : ""}`}
       >
-        {/* Compare Icon - Top Right of Card */}
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleCompareSelection();
-          }}
-          className={`absolute top-3 right-3 z-20 p-2 rounded-lg cursor-pointer transition-all shadow-md ${isSelectedForCompare ? "bg-primary text-primary-foreground scale-110" : "bg-black/60 text-white hover:bg-black/80"}`}
-          title="השוואה"
-        >
-          <GitCompare className="w-5 h-5" />
-        </div>
         {/* Image Slider */}
         {sortedImages.length > 0 && (
           <PropertyImageSlider
@@ -536,41 +528,57 @@ const Buyer = () => {
           </p>
 
           {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-1.5 pt-2">
             <Button
               size="sm"
               variant="outline"
+              className="text-xs px-2"
               onClick={(e) => {
                 e.stopPropagation();
                 setQuickUploadProperty(buyerProperty);
               }}
             >
-              <Camera className="w-4 h-4 ml-1" />
-              העלה מדיה
+              <Camera className="w-4 h-4 sm:ml-1" />
+              <span className="hidden sm:inline">העלה מדיה</span>
             </Button>
             <Button
               size="sm"
               variant={buyerProperty.status === "interested" ? "default" : "outline"}
+              className="text-xs px-2"
               onClick={() => updatePropertyStatus(buyerProperty.id, "אהבתי")}
             >
-              <Heart className="w-4 h-4 ml-1" />
-              אהבתי
+              <Heart className="w-4 h-4 sm:ml-1" />
+              <span className="hidden sm:inline">אהבתי</span>
             </Button>
             <Button
               size="sm"
               variant={buyerProperty.status === "seen" ? "default" : "outline"}
+              className="text-xs px-2"
               onClick={() => updatePropertyStatus(buyerProperty.id, "נראה")}
             >
-              <Eye className="w-4 h-4 ml-1" />
-              ראיתי
+              <Eye className="w-4 h-4 sm:ml-1" />
+              <span className="hidden sm:inline">ראיתי</span>
             </Button>
             <Button
               size="sm"
               variant={buyerProperty.status === "not_interested" ? "destructive" : "outline"}
+              className="text-xs px-2"
               onClick={() => updatePropertyStatus(buyerProperty.id, "לא מעוניין")}
             >
-              <EyeOff className="w-4 h-4 ml-1" />
-              לא מעוניין
+              <EyeOff className="w-4 h-4 sm:ml-1" />
+              <span className="hidden sm:inline">לא מעוניין</span>
+            </Button>
+            <Button
+              size="sm"
+              variant={isSelectedForCompare ? "default" : "outline"}
+              className="text-xs px-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCompareSelection();
+              }}
+            >
+              <GitCompare className="w-4 h-4 sm:ml-1" />
+              <span className="hidden sm:inline">להשוואה</span>
             </Button>
           </div>
 
@@ -762,26 +770,45 @@ const Buyer = () => {
           <div className="flex flex-wrap justify-between items-center gap-3">
             <h2 className="text-xl font-semibold">הנכסים שלי</h2>
             <div className="flex flex-wrap gap-2">
-              {/* Persistent Compare Button */}
-              <Button
-                variant="outline"
-                className="rounded-xl relative"
-                onClick={() => {
-                  if (selectedForCompare.size >= 2) {
-                    navigate(`/compare?buyerId=${buyerId}&properties=${Array.from(selectedForCompare).join(",")}`);
-                  } else {
-                    toast.info("בחר לפחות 2 נכסים להשוואה בעזרת לחיצה על האייקון בפינת התמונה");
-                  }
-                }}
-              >
-                <GitCompare className="w-4 h-4 ml-2" />
-                השוואת נכסים
+              {/* Persistent Compare Button with Clear */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  className="rounded-xl relative"
+                  onClick={() => {
+                    if (selectedForCompare.size >= 2) {
+                      navigate(`/compare?buyerId=${buyerId}&properties=${Array.from(selectedForCompare).join(",")}`);
+                    } else {
+                      toast.info("בחר לפחות 2 נכסים להשוואה");
+                    }
+                  }}
+                >
+                  <GitCompare className="w-4 h-4 ml-2" />
+                  השוואת נכסים
+                  {selectedForCompare.size > 0 && (
+                    <Badge 
+                      key={selectedForCompare.size}
+                      className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs animate-pulse"
+                    >
+                      {selectedForCompare.size}
+                    </Badge>
+                  )}
+                </Button>
                 {selectedForCompare.size > 0 && (
-                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                    {selectedForCompare.size}
-                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => {
+                      setSelectedForCompare(new Set());
+                      toast.info("הבחירות נוקו");
+                    }}
+                    title="נקה בחירות"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 )}
-              </Button>
+              </div>
               
               {/* Inventory Discovery Drawer */}
               <InventoryDiscoveryDrawer

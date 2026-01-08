@@ -48,11 +48,11 @@ export function PropertyImageSlider({
     
     if (Math.abs(distance) >= minSwipeDistance) {
       if (distance > 0) {
-        // Swipe left -> next (for RTL this is actually going forward)
-        goToPrev();
-      } else {
-        // Swipe right -> prev (for RTL this is actually going backward)
+        // Swipe left (finger moves left) -> go to next image (RTL natural direction)
         goToNext();
+      } else {
+        // Swipe right (finger moves right) -> go to previous image (RTL natural direction)
+        goToPrev();
       }
     }
     
