@@ -1,5 +1,5 @@
 /**
- * App.tsx - Cache Bust Build v2026.01.04.1
+ * App.tsx - Cache Bust Build v2026.01.08.2
  * Routes include public /catalog and /catalog/:propertyId
  */
 import { Toaster } from "@/components/ui/toaster";
